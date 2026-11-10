@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  API 24-25 (the bike) legacy launcher icon: the adaptive icon's artwork as one vector, scaled so the
+  adaptive icon's visible 72 dp centre fills a rounded square. Keep in step with
+  drawable/ic_launcher_background.xml and drawable/ic_launcher_foreground.xml.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <clip-path android:pathData="M22,6H86A16,16 0,0 1,102 22V86A16,16 0,0 1,86 102H22A16,16 0,0 1,6 86V22A16,16 0,0 1,22 6Z" />
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:scaleX="1.3333"
+        android:scaleY="1.3333">
+        <path android:pathData="M0,0h108v108h-108z">
+            <aapt:attr name="android:fillColor">
+                <gradient
+                    android:type="linear"
+                    android:startX="54"
+                    android:startY="16"
+                    android:endX="54"
+                    android:endY="62">
+                    <item android:color="#FF1F2350" android:offset="0" />
+                    <item android:color="#FF7A4A86" android:offset="0.55" />
+                    <item android:color="#FFF39A62" android:offset="1" />
+                </gradient>
+            </aapt:attr>
+        </path>
+        <!-- Ground below the horizon. -->
+        <path android:fillColor="#FF1E3350" android:pathData="M0,60h108v48h-108z" />
+        <!-- Water on the right, with a dawn shimmer. -->
+        <path android:fillColor="#FF3C6890" android:pathData="M60,60L108,60L108,108L88,108Z" />
+        <path android:fillColor="#FFFFC77E" android:pathData="M66,64h10v1.6h-10z" />
+        <path android:fillColor="#FFFFC77E" android:pathData="M72,69h12v1.8h-12z" />
+        <path android:fillColor="#FFFFC77E" android:pathData="M78,75h9v2h-9z" />
+        <!-- Sun rising on the horizon, with short rays. -->
+        <path android:fillColor="#FFFFD27A" android:pathData="M39,60A15,15 0,0 1,69 60Z" />
+        <path
+            android:pathData="M54,40.5V35.5M40.2,46.2L36.7,42.7M67.8,46.2L71.3,42.7M34.5,54H29.5M73.5,54H78.5"
+            android:strokeColor="#FFFFD27A"
+            android:strokeLineCap="round"
+            android:strokeWidth="2.6" />
+        <!-- The path, running from the viewer to the horizon, with a dashed centre line. -->
+        <path android:fillColor="#FFF1D3A6" android:pathData="M51.5,60L56.5,60L80,108L24,108Z" />
+        <path android:fillColor="#FFC4935F" android:pathData="M53.5,64L54.6,64L55,69L53.1,69Z" />
+        <path android:fillColor="#FFC4935F" android:pathData="M52.8,74L55.3,74L56,82L52.1,82Z" />
+        <path android:fillColor="#FFC4935F" android:pathData="M51.6,89L56.5,89L57.6,101L50.4,101Z" />
+    </group>
+</vector>
