@@ -256,10 +256,18 @@ internal class Hud(private val listener: Listener) : InputAdapter() {
                 }
                 is MusicState.Problem -> {
                     layoutText(musicLabelLayout, "NO MUSIC  (tap the gear to choose a folder)", SCALE_SMALL, WARN, lineWidth)
-                    layoutText(musicLineLayout, music.message, SCALE_MEDIUM, Color.WHITE, lineWidth)
+                    layoutText(musicLineLayout, music.message.replace(music.folder, shortFolder(music.folder)), SCALE_MEDIUM, Color.WHITE, lineWidth)
                 }
             }
         }
+    }
+
+    /** Drops the external-storage prefix so the folder fits: "/storage/emulated/0/Music/soloton" -> "Music/soloton". */
+    private fun shortFolder(folder: String): String {
+        for (prefix in STORAGE_PREFIXES) {
+            if (folder.startsWith(prefix) && folder.length > prefix.length) return folder.substring(prefix.length)
+        }
+        return folder
     }
 
     private fun trackLine(title: String, artist: String?): String =
@@ -409,6 +417,7 @@ internal class Hud(private val listener: Listener) : InputAdapter() {
     }
 
     companion object {
+        private val STORAGE_PREFIXES = arrayOf("/storage/emulated/0/", "/sdcard/", "/mnt/sdcard/", "/storage/sdcard0/")
         const val HEIGHT = 1080f
         const val MARGIN = 36f
         const val BUTTON = 120f

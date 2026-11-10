@@ -136,7 +136,8 @@ class MusicSession(
 
 /** User-facing problem messages. Each says what is wrong and where. */
 object MusicMessages {
-    private val formats = MusicScanner.EXTENSIONS.sorted().joinToString(", ")
+    // FLAC is still scanned (it plays on Android 8.1+), but is not suggested: Android 7.0 cannot decode it.
+    private val formats = (MusicScanner.EXTENSIONS - "flac").sorted().joinToString(", ")
 
     fun noMusic(folder: String, result: ScanResult): MusicState.Problem {
         val why = when (result) {
