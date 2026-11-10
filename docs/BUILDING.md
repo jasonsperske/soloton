@@ -2,6 +2,25 @@
 
 Everything builds with the Gradle wrapper from a fresh clone. You need a JDK and the Android SDK; Gradle itself downloads on first run.
 
+## Quick start
+
+```bash
+scripts/doctor.sh          # check everything; changes nothing
+scripts/doctor.sh --fix    # install what is missing into ~/.local/share/soloton-toolchain
+. ~/.local/share/soloton-toolchain/env.sh
+./gradlew :apps:roadwork:android:assembleDebug
+```
+
+`scripts/doctor.sh` checks the tools below and what Gradle can see: required items fail, optional ones (emulator, screenshots, GitHub) only warn, and it exits non-zero while anything required is missing. Each problem comes with the command that fixes it.
+
+With `--fix` it applies what it can without root:
+- installs a Temurin JDK 17 (from Adoptium) and the Android command-line tools (from Google) into the private toolchain directory, checking both against their published checksums;
+- installs the SDK packages with `sdkmanager`, accepting the Android SDK licences;
+- writes `sdk.dir` to `local.properties` and the toolchain `env.sh`;
+- creates the gen 1 tablet emulator (`--no-emulator` skips it and its ~1 GB download).
+
+It never uses `sudo`. KVM access, Xvfb and Mesa are listed with the command for you to run. Set `SOLOTON_TOOLCHAIN` to install somewhere else. An existing JDK or SDK (from `JAVA_HOME`, `ANDROID_HOME`, `local.properties` or `~/Android/Sdk`) is used as is. CI runs the doctor on every push.
+
 ## Prerequisites
 
 | Tool | Version | Notes |

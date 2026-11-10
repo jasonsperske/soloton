@@ -4,17 +4,22 @@
 #
 #   scripts/gen1-emulator.sh            create if needed, boot headless, wait, apply display settings
 #   scripts/gen1-emulator.sh --window   same, with a window
+#   scripts/gen1-emulator.sh --create   create and configure the AVD only, do not boot
 #   scripts/gen1-emulator.sh --stop     shut it down
 #
 # Needs ANDROID_HOME (and JAVA_HOME for avdmanager). Installs the emulator and the
-# API 24 x86_64 system image with sdkmanager if they are missing.
+# API 24 system image (x86_64, or arm64-v8a on ARM hosts) with sdkmanager if they are missing.
 set -euo pipefail
 
 AVD=soloton_gen1
 PORT=5590
 SERIAL=emulator-$PORT
 DENSITY=160          # assumed; see docs/DEVICE.md
-IMAGE="system-images;android-24;default;x86_64"
+case "$(uname -m)" in
+  arm64|aarch64) ABI=arm64-v8a ;;
+  *)             ABI=x86_64 ;;
+esac
+IMAGE="system-images;android-24;default;$ABI"
 
 : "${ANDROID_HOME:?set ANDROID_HOME to your Android SDK}"
 SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
@@ -31,7 +36,7 @@ fi
 window=(-no-window)
 [ "${1:-}" = "--window" ] && window=()
 
-if [ ! -x "$EMU" ] || [ ! -d "$ANDROID_HOME/system-images/android-24/default/x86_64" ]; then
+if [ ! -x "$EMU" ] || [ ! -d "$ANDROID_HOME/system-images/android-24/default/$ABI" ]; then
   echo "Installing emulator and $IMAGE"
   "$SDKM" --install emulator "$IMAGE" >/dev/null
 fi
@@ -57,6 +62,11 @@ set_cfg hw.initialOrientation landscape
 set_cfg skin.name 1920x1080
 set_cfg skin.path _no_skin
 set_cfg showDeviceFrame no
+
+if [ "${1:-}" = "--create" ]; then
+  echo "AVD $AVD ready (not started)"
+  exit 0
+fi
 
 if "$ADB" devices | grep -q "^$SERIAL"; then
   echo "$SERIAL already running"

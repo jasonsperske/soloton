@@ -20,7 +20,7 @@ Scaffold in place. The Gradle monorepo builds an installable `roadwork` APK (API
 
 - **Install on a bike:** once builds exist, download an APK from the `latest` release and install it with `adb install -r`, or download and open it on the bike.
 - **Build your own:** fork the repo; CI builds APKs with no setup. See [docs/CI_SETUP.md](docs/CI_SETUP.md) for signing so updates install over each other.
-- **Build locally:** with JDK 17 and the Android SDK, run `./gradlew :apps:roadwork:android:assembleDebug`. See [docs/BUILDING.md](docs/BUILDING.md).
+- **Build locally:** run `scripts/doctor.sh --fix` to check and install the JDK and Android SDK, then `./gradlew :apps:roadwork:android:assembleDebug`. See [docs/BUILDING.md](docs/BUILDING.md).
 - **Music:** copy your own audio files to a folder on the tablet (default `/sdcard/Music/soloton`) and point the app at it in settings. No music is bundled or downloaded.
 
 ## Docs
