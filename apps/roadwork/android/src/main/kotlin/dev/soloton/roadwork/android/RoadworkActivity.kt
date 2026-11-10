@@ -50,7 +50,7 @@ class RoadworkActivity : AndroidApplication() {
     companion object {
         /**
          * Surface and backend settings for an old OpenGL ES 2.0 tablet GPU: no MSAA, no stencil or
-         * destination alpha, 16-bit depth. Colour stays RGB888 because the dawn sky is a long, smooth
+         * destination alpha, 16-bit depth. Colour stays RGB888 because the sky is a long, smooth
          * gradient that bands visibly in RGB565.
          */
         fun gpuConfig() = AndroidApplicationConfiguration().apply {

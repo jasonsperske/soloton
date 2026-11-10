@@ -20,7 +20,7 @@ Sources: [Wellfit Insider, Peloton bike generations](https://wellfitinsider.com/
 ## What this means for code
 
 - **API 24 only features.** No adaptive icons (fallback icon required), no FLAC decoding (added in 8.1), no Let's Encrypt root for HTTPS, runtime storage permission.
-- **Graphics.** Target OpenGL ES 2.0 even though the GPU likely supports more. A 1080p fill rate on a mid-2015 tablet GPU is the main cost: avoid full-screen overdraw, post-processing, MSAA and per-pixel lighting. Budget per frame: under about 150 draw calls and about 60k triangles; the roadwork scene uses 19 and about 14k. Hold 30 fps or better.
+- **Graphics.** Target OpenGL ES 2.0 even though the GPU likely supports more. A 1080p fill rate on a mid-2015 tablet GPU is the main cost: avoid full-screen overdraw, post-processing, MSAA and per-pixel lighting. Budget per frame: under about 150 draw calls and about 60k triangles; the roadwork scene uses about 36 and 48k. Hold 30 fps or better.
 - **Memory.** 2 GB shared with the Peloton system services. Keep an app under about 256 MB of heap plus textures; prefer vertex colours to textures.
 - **ABIs.** Ship `arm64-v8a` and `armeabi-v7a`; `x86_64` is for the emulator only.
 - **Touch and layout.** The screen is big and about arm's length away; at the assumed 160 dpi, 1 dp = 1 px, and 1 px is about 0.25 mm on this panel. Make touch targets at least 96 px (about 24 mm) and text at least 28 px.
