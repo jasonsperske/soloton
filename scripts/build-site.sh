@@ -51,6 +51,8 @@ for dirpath, _, files in os.walk(root):
             app, _, rest = name.partition("--")
             caption = f"{app}: {rest.replace('-', ' ')}"
         shots.append({"src": rel.replace(os.sep, "/"), "caption": caption})
+live = {(s["caption"].split(":")[0], os.path.splitext(os.path.basename(s["src"]))[0]) for s in shots if s["caption"].endswith("(latest build)")}
+shots = [s for s in shots if s["caption"].endswith("(latest build)") or (s["caption"].split(":")[0], os.path.basename(s["src"]).split("--", 1)[-1][:-4]) not in live]
 shots.sort(key=lambda s: (not s["caption"].endswith("(latest build)"), s["caption"]))
 with open(os.path.join(root, "manifest.json"), "w") as fh:
     json.dump(shots, fh, indent=1)
