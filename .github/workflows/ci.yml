@@ -141,6 +141,71 @@ jobs:
           archive: false
           if-no-files-found: error
 
+  emulator-smoke:
+    # Roadwork on an Android 7.0 (API 24) x86_64 emulator: launch, stay up 60 s, GL surface drawing,
+    # screenshot. The screenshot and test report are uploaded as the roadwork-emulator-smoke artifact.
+    name: Emulator smoke test (roadwork, API 24)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
+        with:
+          packages: platforms;android-36 build-tools;36.0.0
+          log-accepted-android-sdk-licenses: false
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+
+      # Per the android-emulator-runner README: let the runner user open /dev/kvm.
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      # Build before the emulator starts, so it is not idling during compilation.
+      - name: Build app and test APKs
+        run: ./gradlew :apps:roadwork:android:assembleDebug :apps:roadwork:android:assembleDebugAndroidTest
+
+      - name: Run smoke test on an API 24 emulator
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 24
+          target: default
+          arch: x86_64
+          profile: pixel
+          ram-size: 2048M
+          disable-animations: true
+          # -skin: a 1920x1080 landscape display like the bike's.
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -skin 1920x1080
+          # Each line runs on its own; the run fails at the first failing line.
+          script: |
+            adb shell wm density 240
+            ./gradlew :apps:roadwork:android:connectedDebugAndroidTest
+            adb pull /sdcard/roadwork-smoke.png roadwork-emulator-smoke.png
+
+      - name: Upload screenshot and test report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: roadwork-emulator-smoke
+          path: |
+            roadwork-emulator-smoke.png
+            apps/roadwork/android/build/reports/androidTests/connected/
+            apps/roadwork/android/build/outputs/androidTest-results/connected/
+          if-no-files-found: warn
+
   release-apks:
     name: Release APKs
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
