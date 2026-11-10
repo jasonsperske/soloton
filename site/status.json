@@ -1,7 +1,7 @@
 {
   "repo": "jasonsperske/soloton",
-  "updated": "2026-11-10T19:45:57Z",
-  "summary": "Scaffold done. Wave 2 starting: CI (WP2), the roadwork scene (WP3) and the music library (WP4) in parallel.",
+  "updated": "2026-11-10T19:55:59Z",
+  "summary": "Scene, music and CI are merged. Integration (WP5) is running: wiring everything into the APK and testing on an Android 7.0 emulator.",
   "packages": [
     {
       "id": "WP0",
@@ -24,8 +24,8 @@
     {
       "id": "WP3",
       "title": "Roadwork scene",
-      "status": "in_progress",
-      "note": "Agent building the 3D dawn run scene, coach on a bike, and HUD."
+      "status": "done",
+      "note": "Procedural dawn waterfront, original coach on a town bike with pedalling and waves, HUD with pace, music and settings. 26 tests; 19 draw calls and about 14k triangles per frame."
     },
     {
       "id": "WP4",
@@ -36,8 +36,8 @@
     {
       "id": "WP5",
       "title": "Integration and device pass",
-      "status": "todo",
-      "note": "Wire scene and music, test on an Android 7.0 emulator."
+      "status": "in_progress",
+      "note": "Agent wiring scene, music and settings into the Android app and testing on an Android 7.0 emulator."
     },
     {
       "id": "WP6",
@@ -78,6 +78,14 @@
     {
       "time": "2026-11-10T19:45:57Z",
       "text": "WP4 music library merged. Note: FLAC will not play on Android 7.0; use ogg or mp3."
+    },
+    {
+      "time": "2026-11-10T19:55:59Z",
+      "text": "WP3 scene merged. Screenshots above are captured from each build."
+    },
+    {
+      "time": "2026-11-10T19:55:59Z",
+      "text": "WP5 integration started."
     }
   ]
 }
