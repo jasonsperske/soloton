@@ -34,13 +34,14 @@ Screenshot contract for every app:
 
 ## Local toolchain
 
-This machine has no system JDK or Android SDK. A private one is installed at `~/.local/share/soloton-toolchain`. Run `source ~/.local/share/soloton-toolchain/env.sh` before Gradle; it sets `JAVA_HOME` (Temurin 17), `ANDROID_HOME`, and `PATH`. It has `platforms;android-35` and `build-tools;35.0.0`; install other SDK packages with `sdkmanager` into the same SDK. Never commit `local.properties` or machine paths. `xvfb-run` and `adb` are available; there is no emulator or system image yet (WP5 installs them).
+This machine has no system JDK or Android SDK. A private one is installed at `~/.local/share/soloton-toolchain`. Run `source ~/.local/share/soloton-toolchain/env.sh` before Gradle; it sets `JAVA_HOME` (Temurin 17), `ANDROID_HOME`, and `PATH`. It has `platforms;android-35`, `platforms;android-36`, `build-tools;35.0.0` and `build-tools;36.0.0` (AGP 9.3 needs 36); install other SDK packages with `sdkmanager` into the same SDK. Never commit `local.properties` or machine paths. `xvfb-run` and `adb` are available; there is no emulator or system image yet (WP5 installs them).
 
 ## Repository layout
 
 ```
 settings.gradle.kts, build.gradle.kts, gradle/libs.versions.toml, gradlew
-build-logic/            convention plugins: soloton.android.app, soloton.gdx.core
+build-logic/            convention plugins: soloton.android.app, soloton.android.library, soloton.gdx.android,
+                        soloton.gdx.core, soloton.gdx.desktop, soloton.kotlin.jvm
 libs/
   platform/             Android helpers: immersive mode, keep-awake, base Activity
   music/                music player library (pure Kotlin API + Android impl)

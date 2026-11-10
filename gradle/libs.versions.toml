@@ -1,0 +1,30 @@
+# Single source of truth for versions. Shared file: change only through WP1 or the coordinator.
+[versions]
+# Android Gradle Plugin 9.3.x: min Gradle 9.5.0, JDK 17, build-tools 36.0.0, max compileSdk 37.
+agp = "9.3.3"
+# Kotlin 2.4.21 is fully supported with Gradle <= 9.7.x and AGP <= 9.3.x.
+kotlin = "2.4.21"
+gdx = "1.14.2"
+junit = "6.1.3"
+
+# Android SDK levels used by the convention plugins.
+# compileSdk 36: gdx-backend-android 1.14.2 depends on androidx.core 1.17.0, which requires it.
+# targetSdk stays 35 (sideloaded; no store deadline). minSdk 24 is the bike.
+android-minSdk = "24"
+android-compileSdk = "36"
+android-targetSdk = "35"
+
+[libraries]
+gdx = { module = "com.badlogicgames.gdx:gdx", version.ref = "gdx" }
+gdx-backend-android = { module = "com.badlogicgames.gdx:gdx-backend-android", version.ref = "gdx" }
+gdx-backend-lwjgl3 = { module = "com.badlogicgames.gdx:gdx-backend-lwjgl3", version.ref = "gdx" }
+gdx-platform = { module = "com.badlogicgames.gdx:gdx-platform", version.ref = "gdx" }
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+
+# Gradle plugins as libraries, for build-logic.
+android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
+kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+
+[plugins]
