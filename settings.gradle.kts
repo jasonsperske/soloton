@@ -18,6 +18,7 @@ dependencyResolutionManagement {
 rootProject.name = "soloton"
 
 // Shared libraries
+include(":libs:api")
 include(":libs:platform")
 include(":libs:music")
 

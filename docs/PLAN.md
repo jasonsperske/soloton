@@ -57,6 +57,10 @@ docs/                   PLAN.md, DEVICE.md, INSTALL.md, ADDING_AN_APP.md
 
 Adding an app later means adding `apps/<name>/` and one line in the CI app matrix. Application IDs are `dev.soloton.<name>`.
 
+## Shared interfaces (`libs/api`)
+
+`libs/api` is a pure Kotlin module owned by the coordinator. It holds `MusicController`, `MusicState`, `Track`, `SilentMusicController`, `PaceSource`, `PlatformActions` and `NoPlatformActions`. WP3 consumes them from `core`; WP4 implements `MusicController` on Android; WP5 wires them; WP6 implements `PaceSource`. These replace the `StateFlow`-based sketch in WP4 below: the render loop polls `state` each frame. Propose changes in your report instead of editing it.
+
 ## Work packages
 
 ### WP0 Device survey (needs the bike on adb; can run any time)
