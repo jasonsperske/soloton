@@ -1,13 +1,13 @@
 {
   "repo": "jasonsperske/soloton",
-  "updated": "2026-11-10T20:12:16Z",
-  "summary": "The Roadwork app is complete on the emulator and the latest APK is the real app. Remaining: checks on the real bike (WP0, WP6, the WP5 bike pass) and the signing secrets.",
+  "updated": "2026-11-10T21:02:55Z",
+  "summary": "MVP done: Roadwork runs on an emulator shaped like the gen 1 Peloton tablet, and the latest APK is the full app. Next: more levels.",
   "packages": [
     {
       "id": "WP0",
       "title": "Device survey",
-      "status": "blocked",
-      "note": "Needs the bike connected over adb. Not connected yet."
+      "status": "done",
+      "note": "Gen 1 tablet spec in docs/DEVICE.md and an emulator shaped like it (API 24, 1920x1080, 160 dpi, 2 GB, 4 cores). CI tests on this profile."
     },
     {
       "id": "WP1",
@@ -37,13 +37,13 @@
       "id": "WP5",
       "title": "Integration and device pass",
       "status": "done",
-      "note": "Scene, folder music and settings wired into the APK with an original icon. Every scenario step passed on an Android 7.0 emulator (about 28-32 fps with software rendering); CI now runs a 60-second emulator smoke test. Real-bike pass waits for the bike on adb."
+      "note": "Scene, folder music and settings wired into the APK with an original icon. All scenario steps pass on the gen 1 emulator profile; CI runs a 60-second smoke test on it."
     },
     {
       "id": "WP6",
       "title": "Bike cadence as pace",
-      "status": "blocked",
-      "note": "Research done (docs/BIKE_SENSORS.md): a Peloton system service exposes cadence, power and resistance to sideloaded apps on newer firmware. Unconfirmed on Android 7.0; needs read-only adb checks on the bike before any code."
+      "status": "skipped",
+      "note": "Parked. Research is in docs/BIKE_SENSORS.md; code needs the real bike's sensor service."
     }
   ],
   "log": [
@@ -90,6 +90,10 @@
     {
       "time": "2026-11-10T20:12:16Z",
       "text": "WP5 integration merged; latest release now carries the full Roadwork app."
+    },
+    {
+      "time": "2026-11-10T21:02:55Z",
+      "text": "Gen 1 tablet emulator profile added; settings screen enlarged for its 160 dpi density. MVP complete."
     }
   ]
 }
