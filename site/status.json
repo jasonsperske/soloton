@@ -1,6 +1,6 @@
 {
   "repo": "jasonsperske/soloton",
-  "updated": "2026-11-10T19:30:48Z",
+  "updated": "2026-11-10T19:35:10Z",
   "summary": "Scaffold done. Wave 2 starting: CI (WP2), the roadwork scene (WP3) and the music library (WP4) in parallel.",
   "packages": [
     {
@@ -18,20 +18,20 @@
     {
       "id": "WP2",
       "title": "CI and releases",
-      "status": "todo",
-      "note": "Build APKs on every push, rolling latest release, signed tags."
+      "status": "in_progress",
+      "note": "Agent writing CI and release workflows."
     },
     {
       "id": "WP3",
       "title": "Roadwork scene",
-      "status": "todo",
-      "note": "First-person dawn run behind a coach on a bicycle."
+      "status": "in_progress",
+      "note": "Agent building the 3D dawn run scene, coach on a bike, and HUD."
     },
     {
       "id": "WP4",
       "title": "Music library",
-      "status": "todo",
-      "note": "Shuffle music from a configurable folder on the tablet."
+      "status": "in_progress",
+      "note": "Agent building the folder music player and settings screen."
     },
     {
       "id": "WP5",
@@ -62,6 +62,14 @@
     {
       "time": "2026-11-10T19:30:48Z",
       "text": "WP1 scaffold merged: APK builds for API 24 with arm and x86_64 natives."
+    },
+    {
+      "time": "2026-11-10T19:35:10Z",
+      "text": "Shared interfaces module (libs/api) added. Wave 2 started: WP2, WP3, WP4 in parallel."
+    },
+    {
+      "time": "2026-11-10T19:35:10Z",
+      "text": "Screenshots now captured live on each push by the progress site build."
     }
   ]
 }
