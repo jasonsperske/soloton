@@ -55,7 +55,7 @@ docs/                   PLAN.md, DEVICE.md, INSTALL.md, ADDING_AN_APP.md
 .github/workflows/      ci.yml, release.yml
 ```
 
-Adding an app later means adding `apps/<name>/` and one line in the CI app matrix. Application IDs are `dev.soloton.<name>`.
+Adding an app later means adding `apps/<name>/` ; CI discovers it automatically. Application IDs are `dev.soloton.<name>`.
 
 ## Shared interfaces (`libs/api`)
 
@@ -74,7 +74,7 @@ Done when: `./gradlew :apps:roadwork:android:assembleDebug` produces an APK, `./
 Owns `.github/workflows/`, `docs/CI_SETUP.md`, and `docs/INSTALL.md`.
 - `ci.yml`: on push and pull request, run `check`, build every app in the matrix, upload each APK as a workflow artifact named `<app>-<short sha>.apk`.
 - `release.yml`: on tag `<app>-v<semver>`, build the signed release APK and attach it to a GitHub Release. On every push to `main`, refresh a rolling `latest` prerelease holding the newest APK of every app, so the bike has one stable download URL.
-- Signing reads `SOLOTON_KEYSTORE_B64`, `SOLOTON_KEYSTORE_PASSWORD`, `SOLOTON_KEY_ALIAS`, `SOLOTON_KEY_PASSWORD`. When the secrets are absent (forks, first run) the build falls back to debug signing and prints a warning rather than failing. `versionCode` comes from the run number.
+- Signing reads `SOLOTON_KEYSTORE_B64`, `SOLOTON_KEYSTORE_PASSWORD`, `SOLOTON_KEY_ALIAS`, `SOLOTON_KEY_PASSWORD`. When the secrets are absent (forks, first run) the build falls back to debug signing and prints a warning rather than failing. `versionCode` is the commit count of the built commit (see `docs/CI_SETUP.md`).
 - `docs/CI_SETUP.md` already exists and is the contract: secret names, tag format, and the `latest` release must match it. Update it if anything changes.
 - `docs/INSTALL.md`: how to install on the bike (`adb install -r`, or download on the bike and open from OpenPelo) and how to copy music over.
 - Fork friendly: no step may hard-code the owner or repo name (use `${{ github.repository }}`), and pull requests from forks must build without secrets. Pin third-party actions to a commit SHA and give each job the minimum `permissions`.

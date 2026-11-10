@@ -1,6 +1,6 @@
 {
   "repo": "jasonsperske/soloton",
-  "updated": "2026-11-10T19:35:10Z",
+  "updated": "2026-11-10T19:39:25Z",
   "summary": "Scaffold done. Wave 2 starting: CI (WP2), the roadwork scene (WP3) and the music library (WP4) in parallel.",
   "packages": [
     {
@@ -18,8 +18,8 @@
     {
       "id": "WP2",
       "title": "CI and releases",
-      "status": "in_progress",
-      "note": "Agent writing CI and release workflows."
+      "status": "done",
+      "note": "CI builds every app on each push; main refreshes a rolling 'latest' release; tags like roadwork-v0.1.0 make releases. Debug-signed until the signing secrets are added."
     },
     {
       "id": "WP3",
@@ -70,6 +70,10 @@
     {
       "time": "2026-11-10T19:35:10Z",
       "text": "Screenshots now captured live on each push by the progress site build."
+    },
+    {
+      "time": "2026-11-10T19:39:25Z",
+      "text": "WP2 CI merged. First real CI run on GitHub starting."
     }
   ]
 }
