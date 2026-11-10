@@ -24,6 +24,18 @@ This file is the brief for implementing agents. Each work package (WP) lists wha
 - **Device facts are unverified.** Screen size, ABI, GL version, and free storage come from WP0, not from memory.
 - **Originality.** The first app is inspired by the idea of a boxer doing dawn roadwork behind a coach on a bicycle. It must be an original scene: do not reproduce the characters, names, outfits, palette, skyline composition, sprites, or music of Punch-Out!! or any other game.
 
+## Progress site and coordinator files
+
+A static progress site is published to GitHub Pages from `site/` by `.github/workflows/pages.yml`, assembled by `scripts/build-site.sh`. It shows `site/status.json` (work package status and log), screenshots, CI runs, commits and APK downloads. The coordinator owns `site/`, `scripts/build-site.sh` and `pages.yml`; agents do not edit them.
+
+Screenshot contract for every app:
+- Committed screenshots go in `apps/<app>/docs/*.png` with descriptive kebab-case names (for example `scene-at-30s.png`). They appear on the site automatically.
+- An app with a desktop launcher provides `apps/<app>/screenshots.sh <absolute output dir>`, run from the repo root. It builds and runs the desktop screenshot mode under `xvfb-run` (software Mesa is fine) and writes PNGs into the output dir. It must work on a stock `ubuntu-latest` runner after the steps in `pages.yml`, finish in under ten minutes, and exit non-zero on failure.
+
+## Local toolchain
+
+This machine has no system JDK or Android SDK. A private one is installed at `~/.local/share/soloton-toolchain`. Run `source ~/.local/share/soloton-toolchain/env.sh` before Gradle; it sets `JAVA_HOME` (Temurin 17), `ANDROID_HOME`, and `PATH`. It has `platforms;android-35` and `build-tools;35.0.0`; install other SDK packages with `sdkmanager` into the same SDK. Never commit `local.properties` or machine paths. `xvfb-run` and `adb` are available; there is no emulator or system image yet (WP5 installs them).
+
 ## Repository layout
 
 ```

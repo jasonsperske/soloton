@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Soloton Progress</title>
+<meta name="description" content="Build progress, screenshots and downloads for Soloton, apps for a first-generation Peloton bike tablet.">
+<style>
+  :root {
+    --bg: #f6f5f1; --surface: #ffffff; --ink: #1d1f23; --muted: #5d636e; --line: #e2e0d9;
+    --accent: #c2410c; --done: #15803d; --doing: #b45309; --todo: #6b7280; --blocked: #b91c1c;
+    --chip-done: #dcfce7; --chip-doing: #fef3c7; --chip-todo: #eceef1; --chip-blocked: #fee2e2;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #121315; --surface: #1b1d20; --ink: #e9e7e2; --muted: #9ca2ad; --line: #2c2f34;
+      --accent: #fb923c; --done: #4ade80; --doing: #fbbf24; --todo: #9ca3af; --blocked: #f87171;
+      --chip-done: #12301d; --chip-doing: #3a2c0b; --chip-todo: #262a30; --chip-blocked: #3b1414;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 32px 16px 64px; }
+  header h1 { margin: 0; font-size: 28px; letter-spacing: -0.01em; }
+  header p { margin: 4px 0 0; color: var(--muted); }
+  .summary { margin: 20px 0 8px; font-size: 17px; }
+  .meta { color: var(--muted); font-size: 13px; }
+  h2 { font-size: 15px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 36px 0 12px; }
+  .bar { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: var(--chip-todo); margin: 12px 0 4px; }
+  .bar span { display: block; }
+  .grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  .card h3 { margin: 0; font-size: 16px; display: flex; gap: 8px; align-items: baseline; }
+  .card h3 .id { color: var(--muted); font-weight: 600; font-size: 13px; }
+  .card p { margin: 8px 0 0; color: var(--muted); font-size: 14px; }
+  .chip { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; margin-top: 8px; }
+  .s-done { background: var(--chip-done); color: var(--done); }
+  .s-in_progress { background: var(--chip-doing); color: var(--doing); }
+  .s-todo, .s-skipped { background: var(--chip-todo); color: var(--todo); }
+  .s-blocked { background: var(--chip-blocked); color: var(--blocked); }
+  .shots { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+  figure { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  figure img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: #000; cursor: zoom-in; }
+  figcaption { padding: 8px 12px; font-size: 13px; color: var(--muted); }
+  ul.list { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+  ul.list li { padding: 10px 14px; border-top: 1px solid var(--line); display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; font-size: 14px; }
+  ul.list li:first-child { border-top: 0; }
+  ul.list .when { color: var(--muted); font-size: 12px; min-width: 120px; }
+  ul.list .grow { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; }
+  a { color: var(--accent); }
+  .empty { color: var(--muted); font-size: 14px; padding: 14px; }
+  dialog { border: 0; padding: 0; background: transparent; max-width: 96vw; }
+  dialog img { max-width: 96vw; max-height: 90vh; display: block; }
+  dialog::backdrop { background: rgba(0,0,0,.85); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Soloton progress</h1>
+    <p>Apps for a first-generation Peloton bike tablet, built in the open.</p>
+  </header>
+
+  <p class="summary" id="summary">Loading…</p>
+  <div class="bar" id="bar" aria-hidden="true"></div>
+  <div class="meta" id="updated"></div>
+
+  <h2>Screenshots</h2>
+  <div class="shots" id="shots"><div class="empty">No screenshots yet.</div></div>
+
+  <h2>Work packages</h2>
+  <div class="grid" id="packages"></div>
+
+  <h2>Downloads</h2>
+  <ul class="list" id="downloads"><li class="empty">Checking releases…</li></ul>
+
+  <h2>CI runs</h2>
+  <ul class="list" id="runs"><li class="empty">Checking GitHub Actions…</li></ul>
+
+  <h2>Recent commits</h2>
+  <ul class="list" id="commits"><li class="empty">Checking commits…</li></ul>
+
+  <h2>Log</h2>
+  <ul class="list" id="log"></ul>
+
+  <p class="meta" style="margin-top:32px">Source: <a id="repo-link" href="#">GitHub</a>. This page refreshes its live sections every two minutes.</p>
+</main>
+<dialog id="zoom"><img alt=""></dialog>
+<script>
+(function () {
+  var LABEL = { done: "Done", in_progress: "In progress", todo: "To do", blocked: "Blocked", skipped: "Skipped" };
+  var COLOR = { done: "var(--done)", in_progress: "var(--doing)", todo: "var(--todo)", blocked: "var(--blocked)", skipped: "var(--todo)" };
+  var repo = null;
+
+  function el(tag, attrs, text) {
+    var e = document.createElement(tag);
+    for (var k in attrs || {}) e.setAttribute(k, attrs[k]);
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  function when(iso) {
+    if (!iso) return "";
+    var d = new Date(iso), s = (Date.now() - d.getTime()) / 1000;
+    if (s < 60) return "just now";
+    if (s < 3600) return Math.round(s / 60) + " min ago";
+    if (s < 86400) return Math.round(s / 3600) + " h ago";
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  }
+  function getJSON(url) {
+    return fetch(url, { cache: "no-store" }).then(function (r) {
+      if (!r.ok) throw new Error(r.status);
+      return r.json();
+    });
+  }
+  function repoFromLocation() {
+    var h = location.hostname, m = h.match(/^([^.]+)\.github\.io$/);
+    var first = location.pathname.split("/").filter(Boolean)[0];
+    return m && first ? m[1] + "/" + first : null;
+  }
+
+  function renderStatus(s) {
+    repo = repoFromLocation() || s.repo;
+    document.getElementById("repo-link").href = "https://github.com/" + repo;
+    document.getElementById("summary").textContent = s.summary || "";
+    document.getElementById("updated").textContent = s.updated ? "Status updated " + when(s.updated) + " (" + new Date(s.updated).toLocaleString() + ")" : "";
+
+    var pk = s.packages || [], counts = {};
+    pk.forEach(function (p) { counts[p.status] = (counts[p.status] || 0) + 1; });
+    var bar = document.getElementById("bar"); bar.innerHTML = "";
+    ["done", "in_progress", "blocked", "todo", "skipped"].forEach(function (k) {
+      if (!counts[k]) return;
+      var seg = el("span", { title: LABEL[k] + ": " + counts[k] });
+      seg.style.width = (100 * counts[k] / pk.length) + "%";
+      seg.style.background = COLOR[k];
+      bar.appendChild(seg);
+    });
+
+    var grid = document.getElementById("packages"); grid.innerHTML = "";
+    pk.forEach(function (p) {
+      var c = el("div", { "class": "card" }), h = el("h3");
+      h.appendChild(el("span", { "class": "id" }, p.id));
+      h.appendChild(el("span", null, p.title));
+      c.appendChild(h);
+      c.appendChild(el("span", { "class": "chip s-" + p.status }, LABEL[p.status] || p.status));
+      if (p.note) c.appendChild(el("p", null, p.note));
+      grid.appendChild(c);
+    });
+
+    var log = document.getElementById("log"); log.innerHTML = "";
+    (s.log || []).slice().reverse().forEach(function (e) {
+      var li = el("li");
+      li.appendChild(el("span", { "class": "when", title: e.time }, when(e.time)));
+      li.appendChild(el("span", { "class": "grow" }, e.text));
+      log.appendChild(li);
+    });
+    if (!(s.log || []).length) log.appendChild(el("li", { "class": "empty" }, "Nothing logged yet."));
+  }
+
+  function renderShots(list) {
+    var box = document.getElementById("shots");
+    if (!list || !list.length) return;
+    box.innerHTML = "";
+    list.forEach(function (sh) {
+      var f = el("figure"), img = el("img", { src: sh.src, alt: sh.caption || sh.src, loading: "lazy" });
+      img.addEventListener("click", function () {
+        var d = document.getElementById("zoom");
+        d.querySelector("img").src = sh.src;
+        d.showModal();
+      });
+      f.appendChild(img);
+      f.appendChild(el("figcaption", null, sh.caption || sh.src));
+      box.appendChild(f);
+    });
+  }
+  document.getElementById("zoom").addEventListener("click", function () { this.close(); });
+
+  function listInto(id, items, empty) {
+    var ul = document.getElementById(id); ul.innerHTML = "";
+    if (!items.length) { ul.appendChild(el("li", { "class": "empty" }, empty)); return; }
+    items.forEach(function (li) { ul.appendChild(li); });
+  }
+
+  function loadLive() {
+    if (!repo) return;
+    var api = "https://api.github.com/repos/" + repo;
+
+    getJSON(api + "/actions/runs?per_page=8").then(function (d) {
+      listInto("runs", (d.workflow_runs || []).map(function (r) {
+        var st = r.status !== "completed" ? "in_progress" : r.conclusion === "success" ? "done" : r.conclusion === "skipped" ? "todo" : "blocked";
+        var li = el("li"), dot = el("span", { "class": "dot", title: r.conclusion || r.status });
+        dot.style.background = COLOR[st];
+        li.appendChild(dot);
+        li.appendChild(el("span", { "class": "when" }, when(r.created_at)));
+        var a = el("a", { href: r.html_url, "class": "grow" }, r.name + ": " + (r.display_title || "") + " (" + (r.conclusion || r.status) + ")");
+        li.appendChild(a);
+        return li;
+      }), "No workflow runs yet.");
+    }).catch(function () { listInto("runs", [], "Could not reach GitHub (rate limit or offline)."); });
+
+    getJSON(api + "/commits?per_page=8").then(function (d) {
+      listInto("commits", d.map(function (c) {
+        var li = el("li");
+        li.appendChild(el("span", { "class": "when" }, when(c.commit.author.date)));
+        li.appendChild(el("a", { href: c.html_url, "class": "grow" }, c.commit.message.split("\n")[0]));
+        return li;
+      }), "No commits.");
+    }).catch(function () { listInto("commits", [], "Could not reach GitHub."); });
+
+    getJSON(api + "/releases?per_page=10").then(function (d) {
+      var items = [];
+      d.forEach(function (rel) {
+        (rel.assets || []).filter(function (a) { return /\.apk$/i.test(a.name); }).forEach(function (a) {
+          var li = el("li");
+          li.appendChild(el("span", { "class": "when" }, when(a.updated_at)));
+          li.appendChild(el("a", { href: a.browser_download_url, "class": "grow" }, a.name));
+          li.appendChild(el("span", { "class": "meta" }, rel.tag_name + " · " + Math.round(a.size / 1048576 * 10) / 10 + " MB"));
+          items.push(li);
+        });
+      });
+      listInto("downloads", items, "No APKs released yet.");
+    }).catch(function () { listInto("downloads", [], "Could not reach GitHub."); });
+  }
+
+  function loadStatus() {
+    return getJSON("status.json").then(renderStatus).catch(function () {
+      document.getElementById("summary").textContent = "Status file missing.";
+    });
+  }
+  function loadShots() {
+    return getJSON("screenshots/manifest.json").then(renderShots).catch(function () {});
+  }
+
+  Promise.all([loadStatus(), loadShots()]).then(loadLive);
+  setInterval(function () { loadStatus().then(loadLive); }, 120000);
+})();
+</script>
+</body>
+</html>
