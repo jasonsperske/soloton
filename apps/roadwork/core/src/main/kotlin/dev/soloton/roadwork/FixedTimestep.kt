@@ -34,7 +34,7 @@ class FixedTimestep(
         return n
     }
 
-    /** Runs fixed steps until simulated time reaches [seconds] (no clamping). Returns steps run. */
+    /** Runs fixed steps until simulated time reaches [seconds] to the nearest step (no clamping). Returns steps run. */
     inline fun advanceTo(seconds: Double, step: (Float) -> Unit): Int {
         val n = stepsUntil(seconds)
         repeat(n) { step(stepSeconds) }
@@ -55,8 +55,9 @@ class FixedTimestep(
 
     @PublishedApi
     internal fun stepsUntil(seconds: Double): Int {
-        // Epsilon (in steps) so 2.0 s at 1/60 s lands on exactly 120 steps despite float rounding.
-        val target = kotlin.math.floor(seconds / stepSeconds + 1e-3).toLong()
+        // Round to the nearest whole step: the float step (1/60 s) is not exact, so 1200 s is
+        // 71999.997 steps and flooring would stop one step short.
+        val target = kotlin.math.floor(seconds / stepSeconds + 0.5).toLong()
         val n = (target - steps).coerceAtLeast(0L).toInt()
         steps += n
         return n
