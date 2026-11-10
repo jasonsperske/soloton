@@ -1,7 +1,7 @@
 {
   "repo": "jasonsperske/soloton",
-  "updated": "2026-11-10T19:55:59Z",
-  "summary": "Scene, music and CI are merged. Integration (WP5) is running: wiring everything into the APK and testing on an Android 7.0 emulator.",
+  "updated": "2026-11-10T20:12:16Z",
+  "summary": "The Roadwork app is complete on the emulator and the latest APK is the real app. Remaining: checks on the real bike (WP0, WP6, the WP5 bike pass) and the signing secrets.",
   "packages": [
     {
       "id": "WP0",
@@ -36,8 +36,8 @@
     {
       "id": "WP5",
       "title": "Integration and device pass",
-      "status": "in_progress",
-      "note": "Agent wiring scene, music and settings into the Android app and testing on an Android 7.0 emulator."
+      "status": "done",
+      "note": "Scene, folder music and settings wired into the APK with an original icon. Every scenario step passed on an Android 7.0 emulator (about 28-32 fps with software rendering); CI now runs a 60-second emulator smoke test. Real-bike pass waits for the bike on adb."
     },
     {
       "id": "WP6",
@@ -86,6 +86,10 @@
     {
       "time": "2026-11-10T19:55:59Z",
       "text": "WP5 integration started."
+    },
+    {
+      "time": "2026-11-10T20:12:16Z",
+      "text": "WP5 integration merged; latest release now carries the full Roadwork app."
     }
   ]
 }
