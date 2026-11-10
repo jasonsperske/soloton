@@ -32,6 +32,7 @@ interface MusicController {
 
 /** A controller that never plays anything. Useful on desktop and in tests. */
 class SilentMusicController(private val folder: String = "(none)") : MusicController {
+    @Volatile
     override var state: MusicState = MusicState.Idle
         private set
     override fun start() { state = MusicState.Problem("Music is not available on this platform.", folder) }

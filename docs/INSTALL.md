@@ -46,7 +46,7 @@ Release notes on GitHub say whether an APK was signed with the release key. See 
 
 ## Copying music to the tablet
 
-Apps with music play files you copy onto the tablet. They never use the network. Supported formats: mp3, ogg, flac, m4a and wav. Sub-folders are scanned too.
+Apps with music play files you copy onto the tablet. They never use the network. Supported formats: mp3, ogg, opus, m4a, aac and wav. FLAC is scanned but Android 7.0 has no FLAC decoder, so FLAC files are skipped on the bike; convert them to ogg or mp3 first. Sub-folders are scanned too.
 
 1. Copy a folder of music to the default location, `/sdcard/Music/soloton/`:
 

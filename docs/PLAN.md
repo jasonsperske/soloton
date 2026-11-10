@@ -95,7 +95,7 @@ Owns `libs/music`.
 Music is files the user copies onto the tablet. There is no network source, so the app needs no `INTERNET` permission.
 
 - API: `MusicController` with `start()`, `skip()`, `pause()`, `resume()`, `nowPlaying: StateFlow<Track?>`, and `setFolder(path)`.
-- Playback: Media3 ExoPlayer (confirm the chosen version still supports API 24). Formats: mp3, ogg, flac, m4a, wav.
+- Playback: Media3 ExoPlayer (confirm the chosen version still supports API 24). Formats: mp3, ogg, opus, m4a, aac, wav (FLAC needs Android 8.1+, so it is skipped on the bike).
 - Library: scan the configured folder recursively, off the main thread. Shuffle without repeats until every track has played, then reshuffle. Track title and album come from tags, falling back to file and folder names.
 - Folder setting: default `/sdcard/Music/soloton`, stored in `SharedPreferences`. A settings screen (gear button on the HUD) shows the current path and track count, and offers an in-app folder browser plus a text field for typing a path. Use the in-app browser, not the system folder picker, because the tablet may not ship the system documents UI. Requires the `READ_EXTERNAL_STORAGE` runtime permission; request it on first launch and when the folder changes.
 - Failure handling: an unreadable file auto-skips, capped at five consecutive failures. A missing, empty, or unreadable folder shows a plain message with the path and a button to open settings; the scene keeps running silently.
