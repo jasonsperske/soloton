@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+# Create and run an Android 7.0 emulator shaped like the Peloton Bike gen 1 tablet.
+# See docs/DEVICE.md for the spec and its sources.
+#
+#   scripts/gen1-emulator.sh            create if needed, boot headless, wait, apply display settings
+#   scripts/gen1-emulator.sh --window   same, with a window
+#   scripts/gen1-emulator.sh --stop     shut it down
+#
+# Needs ANDROID_HOME (and JAVA_HOME for avdmanager). Installs the emulator and the
+# API 24 x86_64 system image with sdkmanager if they are missing.
+set -euo pipefail
+
+AVD=soloton_gen1
+PORT=5590
+SERIAL=emulator-$PORT
+DENSITY=160          # assumed; see docs/DEVICE.md
+IMAGE="system-images;android-24;default;x86_64"
+
+: "${ANDROID_HOME:?set ANDROID_HOME to your Android SDK}"
+SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+AVDM="$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager"
+EMU="$ANDROID_HOME/emulator/emulator"
+ADB="$ANDROID_HOME/platform-tools/adb"
+AVD_HOME="${ANDROID_AVD_HOME:-$HOME/.android/avd}"
+
+if [ "${1:-}" = "--stop" ]; then
+  "$ADB" -s "$SERIAL" emu kill 2>/dev/null || true
+  exit 0
+fi
+
+window=(-no-window)
+[ "${1:-}" = "--window" ] && window=()
+
+if [ ! -x "$EMU" ] || [ ! -d "$ANDROID_HOME/system-images/android-24/default/x86_64" ]; then
+  echo "Installing emulator and $IMAGE"
+  "$SDKM" --install emulator "$IMAGE" >/dev/null
+fi
+
+if [ ! -d "$AVD_HOME/$AVD.avd" ]; then
+  echo "Creating AVD $AVD"
+  echo no | "$AVDM" create avd --force --name "$AVD" --package "$IMAGE" --device "pixel_c" >/dev/null
+fi
+
+# Shape it like the bike tablet: 1920x1080 landscape, 160 dpi, 2 GB RAM, 4 cores, no keyboard or camera.
+cfg="$AVD_HOME/$AVD.avd/config.ini"
+set_cfg() { if grep -q "^$1[ ]*=" "$cfg"; then sed -i "s|^$1[ ]*=.*|$1=$2|" "$cfg"; else echo "$1=$2" >> "$cfg"; fi; }
+set_cfg hw.lcd.width 1920
+set_cfg hw.lcd.height 1080
+set_cfg hw.lcd.density "$DENSITY"
+set_cfg hw.ramSize 2048M
+set_cfg vm.heapSize 256M
+set_cfg hw.cpu.ncore 4
+set_cfg hw.keyboard no
+set_cfg hw.camera.back none
+set_cfg hw.camera.front none
+set_cfg hw.initialOrientation landscape
+set_cfg skin.name 1920x1080
+set_cfg skin.path _no_skin
+set_cfg showDeviceFrame no
+
+if "$ADB" devices | grep -q "^$SERIAL"; then
+  echo "$SERIAL already running"
+else
+  "$EMU" -avd "$AVD" -port "$PORT" "${window[@]}" -gpu swiftshader_indirect \
+    -no-snapshot -no-boot-anim -noaudio -memory 2048 -cores 4 >/dev/null 2>&1 &
+fi
+
+"$ADB" -s "$SERIAL" wait-for-device
+for _ in $(seq 1 120); do
+  [ "$("$ADB" -s "$SERIAL" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ] && break
+  sleep 2
+done
+[ "$("$ADB" -s "$SERIAL" shell getprop sys.boot_completed | tr -d '\r')" = "1" ] || { echo "boot timed out"; exit 1; }
+
+"$ADB" -s "$SERIAL" shell wm size 1920x1080
+"$ADB" -s "$SERIAL" shell wm density "$DENSITY"
+"$ADB" -s "$SERIAL" shell settings put system accelerometer_rotation 0
+"$ADB" -s "$SERIAL" shell settings put system user_rotation 1
+"$ADB" -s "$SERIAL" shell settings put secure immersive_mode_confirmations confirmed
+for s in window_animation_scale transition_animation_scale animator_duration_scale; do
+  "$ADB" -s "$SERIAL" shell settings put global "$s" 0
+done
+echo "Ready: $SERIAL ($AVD, API 24, 1920x1080, ${DENSITY} dpi, 2 GB, 4 cores)"

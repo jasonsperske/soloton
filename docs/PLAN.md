@@ -21,7 +21,7 @@ This file is the brief for implementing agents. Each work package (WP) lists wha
 
 - **No network use.** Apps in this repo work offline. If a later app needs HTTPS, note that API 24 does not trust the ISRG Root X1 (Let's Encrypt) root, so it must be bundled through `network_security_config`.
 - **The repo is public** (`github.com/jasonsperske/soloton`). Anyone must be able to clone, build, and fork it: no secrets, keystores, personal paths, device serials, or machine-specific config in the repo; the build works with only a JDK and the Android SDK; CI passes on forks with no secrets set. Agents commit locally when the coordinator says so and do not push.
-- **Device facts are unverified.** Screen size, ABI, GL version, and free storage come from WP0, not from memory.
+- **Device facts** come from `docs/DEVICE.md`, which marks what is sourced and what is assumed (notably the 160 dpi density).
 - **Originality.** The first app is inspired by the idea of a boxer doing dawn roadwork behind a coach on a bicycle. It must be an original scene: do not reproduce the characters, names, outfits, palette, skyline composition, sprites, or music of Punch-Out!! or any other game.
 
 ## Progress site and coordinator files
@@ -63,8 +63,8 @@ Adding an app later means adding `apps/<name>/` ; CI discovers it automatically.
 
 ## Work packages
 
-### WP0 Device survey (needs the bike on adb; can run any time)
-Record in `docs/DEVICE.md`: `ro.build.version.sdk`, `ro.product.cpu.abilist`, display size and density, GL renderer and version (`dumpsys SurfaceFlinger`), free storage, whether `/sdcard/Music` is readable, and installed Peloton packages (`pm list packages | grep -i peloton`). If the bike is unreachable, say so and leave the file as a checklist. Read-only: install nothing, change no settings.
+### WP0 Target device spec (done)
+The owner installs builds themselves; agents never install on the bike. Code targets the gen 1 tablet spec in `docs/DEVICE.md`, and `scripts/gen1-emulator.sh` boots an emulator shaped like it (API 24, 1920x1080, 160 dpi, 2 GB, 4 cores). "Works on the device" means works on that emulator; CI's smoke test uses the same profile.
 
 ### WP1 Monorepo scaffold (first; everything depends on it)
 Owns root Gradle files, `build-logic/`, `libs/platform/`, `.gitignore`, `README.md`, `docs/BUILDING.md`, `docs/ADDING_AN_APP.md`. `docs/BUILDING.md` gives a newcomer the exact prerequisites (JDK version, Android SDK packages) and commands to build and run each app from a fresh clone; keep the README status section current. Creates `apps/roadwork` with the three modules and a spinning-cube placeholder.
@@ -104,11 +104,11 @@ Music is files the user copies onto the tablet. There is no network source, so t
 Done when: unit tests cover the scan, shuffle-without-repeat, and the failure cap against a temp folder; an instrumented test on an API 24 emulator plays a bundled test tone from a configured folder and survives the folder being changed and being emptied.
 
 ### WP5 Integration and device pass (after WP3 and WP4)
-Owns `apps/roadwork/android`. Wires the scene, music, immersive mode, icon, and app label. Runs on an API 24 emulator in CI (boot, launch, screenshot, no crash for 60 s). If the bike is on adb: install, record frame rate, check touch targets, confirm audio, and note results in `docs/DEVICE.md`.
+Owns `apps/roadwork/android`. Wires the scene, music, immersive mode, icon, and app label. Runs on an API 24 emulator in CI (boot, launch, screenshot, no crash for 60 s). Verified on the gen 1 emulator profile (see WP0).
 Done when: the CI-built APK installs and runs on API 24, the skip button changes tracks, and changing the music folder in settings takes effect without restarting.
 
-### WP6 Bike cadence as pace (optional, after WP0)
-Research spike first, code second. Find out whether the gen 1 tablet exposes cadence, resistance, or power to third-party apps, using open-source projects such as Grupetto as references and the package list from WP0. Deliver a one-page finding in `docs/DEVICE.md`. Only if there is a supported route, implement `libs/bike` with a `PaceSource` that maps cadence to speed and falls back to the default pace when the service is missing.
+### WP6 Bike cadence as pace (parked)
+Research is in `docs/BIKE_SENSORS.md`. A cadence `PaceSource` cannot be tested without the real bike's sensor service, so it is parked until the owner asks for it.
 
 ## Order of work
 
@@ -116,17 +116,19 @@ Research spike first, code second. Find out whether the gen 1 tablet exposes cad
 WP1 ──┬── WP2
       ├── WP3 ──┐
       └── WP4 ──┴── WP5
-WP0 (any time) ──── WP6 (optional)
+WP0 (spec + gen 1 emulator)      WP6 (parked)
 ```
 
-Wave 1: WP1 alone. Wave 2: WP2, WP3, WP4 in parallel, each in its own worktree. Wave 3: WP5. WP0 and WP6 whenever the bike is reachable.
+Wave 1: WP1 alone. Wave 2: WP2, WP3, WP4 in parallel, each in its own worktree. Wave 3: WP5. All done; the MVP runs on the gen 1 emulator.
+
+Next: more Roadwork levels, from the owner's designs.
 
 ## Rules for every agent
 
 - Stay inside the paths your WP owns. Shared files (`libs.versions.toml`, `settings.gradle.kts`) change only through WP1 or the coordinator.
 - Verify library versions and minimum API levels against current documentation instead of memory.
 - Report what was run and what the output was. A step that could not be run (no device, no network) is reported as not run.
-- No pushing, no repo creation, no secrets in the repo, nothing installed on the bike outside WP5 and WP0's read-only survey.
+- No pushing, no repo creation, no secrets in the repo, nothing installed on the bike, ever: the owner does that.
 
 ## Open decisions for the user
 

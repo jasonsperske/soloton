@@ -161,12 +161,12 @@ class MusicSettingsActivity : BikeActivity() {
 
         left.addView(text(getString(R.string.soloton_music_type_path), 20f), margins(top = 16))
         pathInput = EditText(this).apply {
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 22f)
+            setTextSize(TypedValue.COMPLEX_UNIT_PX, px(22f * TEXT_SCALE))
             setTextColor(Color.WHITE)
             setSingleLine(true)
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS or InputType.TYPE_TEXT_VARIATION_URI
             imeOptions = EditorInfo.IME_ACTION_DONE or EditorInfo.IME_FLAG_NO_EXTRACT_UI
-            minHeight = TOUCH
+            minHeight = touch
             setOnEditorActionListener { v, actionId, _ ->
                 if (actionId == EditorInfo.IME_ACTION_DONE) {
                     useFolder(v.text.toString())
@@ -200,7 +200,7 @@ class MusicSettingsActivity : BikeActivity() {
         adapter = object : ArrayAdapter<String>(this, 0, ArrayList()) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
                 val tv = (convertView as? TextView) ?: text("", 26f).apply {
-                    minHeight = TOUCH
+                    minHeight = touch
                     gravity = Gravity.CENTER_VERTICAL
                     setPadding(dp(16), 0, dp(16), 0)
                 }
@@ -223,19 +223,19 @@ class MusicSettingsActivity : BikeActivity() {
 
     private fun text(value: String, sp: Float, bold: Boolean = false) = TextView(this).apply {
         text = value
-        setTextSize(TypedValue.COMPLEX_UNIT_SP, sp)
+        setTextSize(TypedValue.COMPLEX_UNIT_PX, px(sp * TEXT_SCALE))
         setTextColor(Color.WHITE)
         if (bold) typeface = Typeface.DEFAULT_BOLD
     }
 
     private fun button(label: String, onClick: () -> Unit) = Button(this).apply {
         text = label
-        setTextSize(TypedValue.COMPLEX_UNIT_SP, 22f)
+        setTextSize(TypedValue.COMPLEX_UNIT_PX, px(22f * TEXT_SCALE))
         isAllCaps = false
-        minHeight = TOUCH
-        minimumHeight = TOUCH
-        minWidth = TOUCH * 2
-        minimumWidth = TOUCH * 2
+        minHeight = touch
+        minimumHeight = touch
+        minWidth = touch * 2
+        minimumWidth = touch * 2
         setOnClickListener { onClick() }
     }
 
@@ -243,11 +243,24 @@ class MusicSettingsActivity : BikeActivity() {
         ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
     ).apply { setMargins(dp(left), dp(top), 0, 0) }
 
-    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+    /**
+     * Sizes scale with the screen's pixel height rather than its density, so the layout is
+     * the same physical size on the bike whatever density the tablet reports (see docs/DEVICE.md).
+     * One unit is one pixel on a 1080-line screen.
+     */
+    private val unit: Float by lazy {
+        val m = resources.displayMetrics
+        minOf(m.widthPixels, m.heightPixels) / 1080f
+    }
+    private val touch: Int by lazy { px(TOUCH_UNITS).toInt() }
+    private fun px(units: Float): Float = units * unit
+    private fun dp(value: Int): Int = px(value * 1.5f).toInt()
 
     companion object {
-        /** Minimum touch target in pixels (plan: 96 px). */
-        private const val TOUCH = 96
+        /** Touch target height in units (pixels on a 1080-line screen); the plan's minimum is 96. */
+        private const val TOUCH_UNITS = 112f
+        /** Converts the sp-style sizes used above to units: 22 becomes 30 px on a 1080-line screen. */
+        private const val TEXT_SCALE = 1.36f
         private val BACKGROUND = Color.rgb(0x16, 0x1A, 0x22)
         private val WARNING = Color.rgb(0xFF, 0xC1, 0x4D)
 

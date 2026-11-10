@@ -142,9 +142,10 @@ jobs:
           if-no-files-found: error
 
   emulator-smoke:
-    # Roadwork on an Android 7.0 (API 24) x86_64 emulator: launch, stay up 60 s, GL surface drawing,
-    # screenshot. The screenshot and test report are uploaded as the roadwork-emulator-smoke artifact.
-    name: Emulator smoke test (roadwork, API 24)
+    # Roadwork on an emulator shaped like the Peloton Bike gen 1 tablet (docs/DEVICE.md; same profile as
+    # scripts/gen1-emulator.sh): API 24, 1920x1080 landscape, 160 dpi, 2 GB RAM, 4 cores.
+    # Launch, stay up 60 s, GL surface drawing, screenshot. The screenshot and test report are uploaded as the roadwork-emulator-smoke artifact.
+    name: Emulator smoke test (roadwork, gen 1 tablet profile)
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -186,12 +187,13 @@ jobs:
           arch: x86_64
           profile: pixel
           ram-size: 2048M
+          cores: 4
           disable-animations: true
-          # -skin: a 1920x1080 landscape display like the bike's.
+          # -skin: the bike's 1920x1080 landscape display.
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -skin 1920x1080
           # Each line runs on its own; the run fails at the first failing line.
           script: |
-            adb shell wm density 240
+            adb shell wm density 160
             ./gradlew :apps:roadwork:android:connectedDebugAndroidTest
             adb pull /sdcard/roadwork-smoke.png roadwork-emulator-smoke.png
 
