@@ -1,7 +1,7 @@
 {
   "repo": "jasonsperske/soloton",
-  "updated": "2026-11-10T22:17:41Z",
-  "summary": "Scene rework in progress: rider's-eye view from the bike, jogger ahead, daytime riverfront.",
+  "updated": "2026-11-10T22:46:58Z",
+  "summary": "Scene reworked: you ride the bike along a sunny riverfront behind a jogger. Runs on the gen 1 emulator; the latest APK has it. Ready for more levels.",
   "packages": [
     {
       "id": "WP0",
@@ -24,8 +24,8 @@
     {
       "id": "WP3",
       "title": "Roadwork scene",
-      "status": "in_progress",
-      "note": "Reworking the scene per the owner's direction: you ride the bike in first person, an original jogger runs ahead, sunny riverfront promenade with a big skyline across the water."
+      "status": "done",
+      "note": "Rider's-eye view from the bike with handlebars and hands, an original jogger pacing ahead (runs, glances back, shadow-boxes), sunny riverfront promenade with an invented skyline across the river. 30 tests; 36 draw calls, about 48k triangles."
     },
     {
       "id": "WP4",
@@ -98,6 +98,10 @@
     {
       "time": "2026-11-10T22:17:41Z",
       "text": "Owner direction: player rides the bike, jogger ahead, daytime riverfront city setting. Scene rework started."
+    },
+    {
+      "time": "2026-11-10T22:46:58Z",
+      "text": "Riverfront rider scene merged and verified on the gen 1 emulator."
     }
   ]
 }
