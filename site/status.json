@@ -1,6 +1,6 @@
 {
   "repo": "jasonsperske/soloton",
-  "updated": "2026-11-10T19:39:25Z",
+  "updated": "2026-11-10T19:45:57Z",
   "summary": "Scaffold done. Wave 2 starting: CI (WP2), the roadwork scene (WP3) and the music library (WP4) in parallel.",
   "packages": [
     {
@@ -30,8 +30,8 @@
     {
       "id": "WP4",
       "title": "Music library",
-      "status": "in_progress",
-      "note": "Agent building the folder music player and settings screen."
+      "status": "done",
+      "note": "Folder music player on Media3 1.11.1 with shuffle, in-app folder browser and settings screen. 21 unit tests plus 3 tests passing on an Android 7.0 emulator."
     },
     {
       "id": "WP5",
@@ -74,6 +74,10 @@
     {
       "time": "2026-11-10T19:39:25Z",
       "text": "WP2 CI merged. First real CI run on GitHub starting."
+    },
+    {
+      "time": "2026-11-10T19:45:57Z",
+      "text": "WP4 music library merged. Note: FLAC will not play on Android 7.0; use ogg or mp3."
     }
   ]
 }
