@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="soloton_music_title">Music</string>
+    <string name="soloton_music_current_folder">Folder: %1$s</string>
+    <string name="soloton_music_scanning">Looking for music…</string>
+    <plurals name="soloton_music_tracks_found">
+        <item quantity="one">%d track found</item>
+        <item quantity="other">%d tracks found</item>
+    </plurals>
+    <string name="soloton_music_permission_needed">Music needs permission to read the tablet\'s storage.</string>
+    <string name="soloton_music_allow">Allow storage access</string>
+    <string name="soloton_music_type_path">Or type a folder path:</string>
+    <string name="soloton_music_use_typed">Use typed path</string>
+    <string name="soloton_music_done">Done</string>
+    <string name="soloton_music_browse">Browse folders</string>
+    <string name="soloton_music_up">Up</string>
+    <string name="soloton_music_use_this">Use this folder</string>
+    <string name="soloton_music_cannot_read">This folder cannot be read.</string>
+    <string name="soloton_music_no_subfolders">No subfolders here.</string>
+</resources>
