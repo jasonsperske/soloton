@@ -1,7 +1,7 @@
 {
   "repo": "jasonsperske/soloton",
-  "updated": "2026-11-10T19:20:36Z",
-  "summary": "Wave 1 running: scaffold (WP1) and the cadence research spike (WP6).",
+  "updated": "2026-11-10T19:30:48Z",
+  "summary": "Scaffold done. Wave 2 starting: CI (WP2), the roadwork scene (WP3) and the music library (WP4) in parallel.",
   "packages": [
     {
       "id": "WP0",
@@ -12,8 +12,8 @@
     {
       "id": "WP1",
       "title": "Monorepo scaffold",
-      "status": "in_progress",
-      "note": "Agent building the Gradle monorepo, libGDX modules and a placeholder cube."
+      "status": "done",
+      "note": "Gradle monorepo, convention plugins, placeholder cube app. Debug and release APKs build; check passes."
     },
     {
       "id": "WP2",
@@ -58,6 +58,10 @@
     {
       "time": "2026-11-10T19:20:36Z",
       "text": "WP6 research finished: likely route via a Peloton sensor service, to be confirmed on the bike."
+    },
+    {
+      "time": "2026-11-10T19:30:48Z",
+      "text": "WP1 scaffold merged: APK builds for API 24 with arm and x86_64 natives."
     }
   ]
 }
