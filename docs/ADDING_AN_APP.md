@@ -65,7 +65,7 @@ Versions come only from `gradle/libs.versions.toml`.
 
 5. Add `apps/climb/screenshots.sh` (copy roadwork's, change the shot list and install path) and commit its output under `apps/climb/docs/*.png`. The progress site picks them up.
 
-6. Add `climb` to the app matrix in `.github/workflows/ci.yml` (one line).
+6. Nothing to change in CI. `.github/workflows/ci.yml` builds every directory that has `apps/<name>/android/build.gradle.kts`, uploads `climb-<short sha>.apk` as a workflow artifact, and adds `climb.apk` to the `latest` prerelease on pushes to `main`. Tag `climb-v0.1.0` to publish a release (see [CI_SETUP.md](CI_SETUP.md)). The directory name must be lowercase letters, digits, `-` or `_`.
 
 7. Check: `./gradlew :apps:climb:android:assembleDebug check` and `bash apps/climb/screenshots.sh "$PWD/build/shots"`.
 
