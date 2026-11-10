@@ -14,7 +14,7 @@ Scaffold in place. The Gradle monorepo builds an installable `roadwork` APK (API
 
 | App | What it is | Status |
 |---|---|---|
-| `roadwork` | First-person dawn run behind a coach on a bicycle, with shuffled music from a folder on the tablet | Placeholder scene builds |
+| `roadwork` | First-person bike ride along a sunny city riverfront, pacing a jogger out on their roadwork, with shuffled music from a folder on the tablet | Placeholder scene builds |
 
 ## Using it
 
