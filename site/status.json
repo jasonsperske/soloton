@@ -1,6 +1,6 @@
 {
   "repo": "jasonsperske/soloton",
-  "updated": "2026-11-10T19:17:03Z",
+  "updated": "2026-11-10T19:20:36Z",
   "summary": "Wave 1 running: scaffold (WP1) and the cadence research spike (WP6).",
   "packages": [
     {
@@ -42,8 +42,8 @@
     {
       "id": "WP6",
       "title": "Bike cadence as pace",
-      "status": "in_progress",
-      "note": "Research agent checking how open-source projects read cadence on the gen 1 bike."
+      "status": "blocked",
+      "note": "Research done (docs/BIKE_SENSORS.md): a Peloton system service exposes cadence, power and resistance to sideloaded apps on newer firmware. Unconfirmed on Android 7.0; needs read-only adb checks on the bike before any code."
     }
   ],
   "log": [
@@ -54,6 +54,10 @@
     {
       "time": "2026-11-10T19:17:03Z",
       "text": "WP1 scaffold agent and WP6 research agent started."
+    },
+    {
+      "time": "2026-11-10T19:20:36Z",
+      "text": "WP6 research finished: likely route via a Peloton sensor service, to be confirmed on the bike."
     }
   ]
 }
