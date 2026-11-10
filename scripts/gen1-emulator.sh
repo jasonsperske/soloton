@@ -79,8 +79,18 @@ if [ "${1:-}" = "--create" ]; then
   exit 0
 fi
 
+# Is our emulator already up, and was it started without a window?
+running_headless() { ps -eo args 2>/dev/null | grep -v grep | grep -- "-avd $AVD " | grep -q -- "-no-window"; }
+
+if "$ADB" devices | grep -q "^$SERIAL" && [ "${#window[@]}" -eq 0 ] && running_headless; then
+  echo "$SERIAL is running without a window; restarting it with one"
+  "$ADB" -s "$SERIAL" emu kill >/dev/null 2>&1 || true
+  for _ in $(seq 1 30); do "$ADB" devices | grep -q "^$SERIAL" || break; sleep 1; done
+fi
+
 if "$ADB" devices | grep -q "^$SERIAL"; then
-  echo "$SERIAL already running"
+  if running_headless; then echo "$SERIAL already running (headless; use --window to show it)"
+  else echo "$SERIAL already running"; fi
 else
   "$EMU" -avd "$AVD" -port "$PORT" "${window[@]}" -gpu swiftshader_indirect \
     -no-snapshot -no-boot-anim -noaudio -memory 2048 -cores 4 >/dev/null 2>&1 &
