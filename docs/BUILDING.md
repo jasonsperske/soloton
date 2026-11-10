@@ -7,9 +7,11 @@ Everything builds with the Gradle wrapper from a fresh clone. You need a JDK and
 ```bash
 scripts/doctor.sh          # check everything; changes nothing
 scripts/doctor.sh --fix    # install what is missing into ~/.local/share/soloton-toolchain
-. ~/.local/share/soloton-toolchain/env.sh
+. ~/.local/share/soloton-toolchain/env.sh   # this shell; or add --shell above to load it in every new shell
 ./gradlew :apps:roadwork:android:assembleDebug
 ```
+
+`./gradlew` needs `JAVA_HOME` (or Java 17+ on `PATH`) in your shell. The other repo scripts (`scripts/gen1-emulator.sh`, `apps/*/screenshots.sh`) find the toolchain on their own through `scripts/lib/toolchain.sh`, so they work from any shell. `--fix --shell` adds one line to `~/.bashrc`, `~/.zshrc` or `~/.profile` that loads `env.sh`; it is opt-in because it sets `JAVA_HOME` for everything you run.
 
 `scripts/doctor.sh` checks the tools below and what Gradle can see: required items fail, optional ones (emulator, screenshots, GitHub) only warn, and it exits non-zero while anything required is missing. Each problem comes with the command that fixes it.
 

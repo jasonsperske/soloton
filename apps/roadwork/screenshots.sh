@@ -17,6 +17,9 @@ mkdir -p "$out"
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$repo_root"
+# Find the JDK (and SDK) without needing JAVA_HOME exported; see scripts/doctor.sh.
+. "$repo_root/scripts/lib/toolchain.sh"
+soloton_toolchain_env "$repo_root"
 
 # name:seconds pairs: first light, settled in, five minutes on, and full morning (20 min).
 shots=(

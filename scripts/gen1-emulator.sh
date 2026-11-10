@@ -7,7 +7,8 @@
 #   scripts/gen1-emulator.sh --create   create and configure the AVD only, do not boot
 #   scripts/gen1-emulator.sh --stop     shut it down
 #
-# Needs ANDROID_HOME (and JAVA_HOME for avdmanager). Installs the emulator and the
+# Finds the SDK and JDK itself (scripts/lib/toolchain.sh; scripts/doctor.sh --fix installs them).
+# Installs the emulator and the
 # API 24 system image (x86_64, or arm64-v8a on ARM hosts) with sdkmanager if they are missing.
 set -euo pipefail
 
@@ -21,7 +22,17 @@ case "$(uname -m)" in
 esac
 IMAGE="system-images;android-24;default;$ABI"
 
-: "${ANDROID_HOME:?set ANDROID_HOME to your Android SDK}"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+. "$ROOT/scripts/lib/toolchain.sh"
+soloton_toolchain_env "$ROOT"
+if [ -z "${ANDROID_HOME:-}" ] || [ ! -x "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" ]; then
+  echo "No Android SDK with command-line tools found. Run scripts/doctor.sh --fix" >&2
+  exit 1
+fi
+if [ -z "${JAVA_HOME:-}" ] && ! command -v java >/dev/null 2>&1; then
+  echo "No JDK found (avdmanager needs one). Run scripts/doctor.sh --fix" >&2
+  exit 1
+fi
 SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
 AVDM="$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager"
 EMU="$ANDROID_HOME/emulator/emulator"

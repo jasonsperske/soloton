@@ -4,6 +4,9 @@
 #   scripts/doctor.sh          report only; changes nothing
 #   scripts/doctor.sh --fix    also apply automatic fixes
 #   --no-emulator              skip the optional gen 1 emulator checks (and its ~1 GB download)
+#   --shell                    with --fix: also load the toolchain in every new shell, by adding
+#                              one line to ~/.bashrc, ~/.zshrc or ~/.profile (opt-in: it sets
+#                              JAVA_HOME for everything you run, not just Soloton)
 #
 # Automatic fixes install into a private toolchain directory, never system-wide:
 #   ${SOLOTON_TOOLCHAIN:-~/.local/share/soloton-toolchain}
@@ -22,12 +25,13 @@ AVD_NAME=soloton_gen1
 AVD_HOME="${ANDROID_AVD_HOME:-$HOME/.android/avd}"
 MIN_JAVA=17
 
-FIX=0; EMULATOR=1
+FIX=0; EMULATOR=1; SHELLRC=0
 for arg in "$@"; do
   case "$arg" in
     --fix) FIX=1 ;;
     --no-emulator) EMULATOR=0 ;;
-    -h|--help) sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    --shell) SHELLRC=1 ;;
+    -h|--help) sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "unknown option: $arg (try --help)" >&2; exit 2 ;;
   esac
 done
@@ -259,9 +263,23 @@ else
     autofix; hint "or install any JDK $MIN_JAVA+ (Temurin) and set JAVA_HOME"
   fi
 fi
-if [ -n "$JDK_HOME" ] && [ "$JDK_SOURCE" != "JAVA_HOME" ] && [ "$JDK_SOURCE" != "PATH" ]; then
-  warn "JDK visible to Gradle" "this shell has no JAVA_HOME pointing at it"
-  hint ". \"$TOOLCHAIN/env.sh\"   (written by --fix)"
+# ./gradlew starts with JAVA_HOME, or java on PATH; it cannot find the toolchain JDK by itself.
+# (Repo scripts such as gen1-emulator.sh and screenshots.sh find it on their own.)
+shell_jdk_major() {
+  if [ -n "${JAVA_HOME:-}" ] && [ -x "$JAVA_HOME/bin/java" ]; then java_major "$JAVA_HOME/bin/java"
+  elif have java; then java_major "$(command -v java)"; fi
+}
+if [ -n "$JDK_HOME" ]; then
+  m="$(shell_jdk_major)"
+  if [ -n "$m" ] && [ "$m" -ge "$MIN_JAVA" ] 2>/dev/null; then
+    ok "JDK visible to Gradle" "Java $m via $( [ -n "${JAVA_HOME:-}" ] && echo JAVA_HOME || echo PATH )"
+  else
+    fail "JDK visible to Gradle" "./gradlew will not start in this shell: ${m:+java on it is $m; }no JAVA_HOME for JDK $MIN_JAVA+"
+    hint "this shell:   . \"$TOOLCHAIN/env.sh\""
+    if [ "$SHELLRC" = 1 ] && [ "$FIX" = 1 ]; then hint "every shell:  open a new terminal once --shell below has added the line"
+    else hint "every shell:  scripts/doctor.sh --fix --shell   (adds that line to your shell startup file)"; fi
+    hint "repo scripts (gen1-emulator.sh, screenshots.sh) find the JDK themselves"
+  fi
 fi
 
 # ---------- Android SDK ----------
@@ -323,6 +341,17 @@ fi
 # Keep the toolchain env file in step with what was found.
 if [ "$FIX" = 1 ] && [ -n "$JDK_HOME" ] && [ "$SDK_OK" = 1 ]; then
   write_env_sh && ok "env file" "$TOOLCHAIN/env.sh"
+  if [ "$SHELLRC" = 1 ]; then
+    case "$(basename "${SHELL:-}")" in zsh) RC="$HOME/.zshrc" ;; bash) RC="$HOME/.bashrc" ;; *) RC="$HOME/.profile" ;; esac
+    LINE="[ -f \"$TOOLCHAIN/env.sh\" ] && . \"$TOOLCHAIN/env.sh\"   # soloton toolchain (scripts/doctor.sh --shell)"
+    if [ -f "$RC" ] && grep -qF "# soloton toolchain" "$RC"; then
+      ok "shell startup" "$RC already loads the toolchain"
+    else
+      printf '\n%s\n' "$LINE" >> "$RC" && ok "shell startup" "added the toolchain to $RC (new shells)"
+    fi
+  fi
+elif [ "$SHELLRC" = 1 ] && [ "$FIX" = 0 ]; then
+  hint "--shell only takes effect together with --fix"
 fi
 
 # ---------- emulator (optional) ----------
