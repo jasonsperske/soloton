@@ -1,17 +1,59 @@
 {
   "repo": "jasonsperske/soloton",
-  "updated": "2026-11-10T20:00:00Z",
-  "summary": "Execution started. The progress site is up; the monorepo scaffold (WP1) is next.",
+  "updated": "2026-11-10T19:17:03Z",
+  "summary": "Wave 1 running: scaffold (WP1) and the cadence research spike (WP6).",
   "packages": [
-    { "id": "WP0", "title": "Device survey", "status": "blocked", "note": "Needs the bike connected over adb. Not connected yet." },
-    { "id": "WP1", "title": "Monorepo scaffold", "status": "todo", "note": "Gradle monorepo, libGDX modules, placeholder app." },
-    { "id": "WP2", "title": "CI and releases", "status": "todo", "note": "Build APKs on every push, rolling latest release, signed tags." },
-    { "id": "WP3", "title": "Roadwork scene", "status": "todo", "note": "First-person dawn run behind a coach on a bicycle." },
-    { "id": "WP4", "title": "Music library", "status": "todo", "note": "Shuffle music from a configurable folder on the tablet." },
-    { "id": "WP5", "title": "Integration and device pass", "status": "todo", "note": "Wire scene and music, test on an Android 7.0 emulator." },
-    { "id": "WP6", "title": "Bike cadence as pace", "status": "todo", "note": "Optional research spike: can pedalling drive the run speed?" }
+    {
+      "id": "WP0",
+      "title": "Device survey",
+      "status": "blocked",
+      "note": "Needs the bike connected over adb. Not connected yet."
+    },
+    {
+      "id": "WP1",
+      "title": "Monorepo scaffold",
+      "status": "in_progress",
+      "note": "Agent building the Gradle monorepo, libGDX modules and a placeholder cube."
+    },
+    {
+      "id": "WP2",
+      "title": "CI and releases",
+      "status": "todo",
+      "note": "Build APKs on every push, rolling latest release, signed tags."
+    },
+    {
+      "id": "WP3",
+      "title": "Roadwork scene",
+      "status": "todo",
+      "note": "First-person dawn run behind a coach on a bicycle."
+    },
+    {
+      "id": "WP4",
+      "title": "Music library",
+      "status": "todo",
+      "note": "Shuffle music from a configurable folder on the tablet."
+    },
+    {
+      "id": "WP5",
+      "title": "Integration and device pass",
+      "status": "todo",
+      "note": "Wire scene and music, test on an Android 7.0 emulator."
+    },
+    {
+      "id": "WP6",
+      "title": "Bike cadence as pace",
+      "status": "in_progress",
+      "note": "Research agent checking how open-source projects read cadence on the gen 1 bike."
+    }
   ],
   "log": [
-    { "time": "2026-11-10T20:00:00Z", "text": "Repo public, plan committed, progress site added." }
+    {
+      "time": "2026-11-10T19:17:03Z",
+      "text": "Repo public, plan committed, progress site added."
+    },
+    {
+      "time": "2026-11-10T19:17:03Z",
+      "text": "WP1 scaffold agent and WP6 research agent started."
+    }
   ]
 }
