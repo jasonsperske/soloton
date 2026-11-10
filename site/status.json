@@ -1,7 +1,7 @@
 {
   "repo": "jasonsperske/soloton",
-  "updated": "2026-11-10T21:02:55Z",
-  "summary": "MVP done: Roadwork runs on an emulator shaped like the gen 1 Peloton tablet, and the latest APK is the full app. Next: more levels.",
+  "updated": "2026-11-10T22:17:41Z",
+  "summary": "Scene rework in progress: rider's-eye view from the bike, jogger ahead, daytime riverfront.",
   "packages": [
     {
       "id": "WP0",
@@ -24,8 +24,8 @@
     {
       "id": "WP3",
       "title": "Roadwork scene",
-      "status": "done",
-      "note": "Procedural dawn waterfront, original coach on a town bike with pedalling and waves, HUD with pace, music and settings. 26 tests; 19 draw calls and about 14k triangles per frame."
+      "status": "in_progress",
+      "note": "Reworking the scene per the owner's direction: you ride the bike in first person, an original jogger runs ahead, sunny riverfront promenade with a big skyline across the water."
     },
     {
       "id": "WP4",
@@ -94,6 +94,10 @@
     {
       "time": "2026-11-10T21:02:55Z",
       "text": "Gen 1 tablet emulator profile added; settings screen enlarged for its 160 dpi density. MVP complete."
+    },
+    {
+      "time": "2026-11-10T22:17:41Z",
+      "text": "Owner direction: player rides the bike, jogger ahead, daytime riverfront city setting. Scene rework started."
     }
   ]
 }
