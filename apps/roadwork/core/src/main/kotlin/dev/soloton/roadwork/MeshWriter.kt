@@ -32,6 +32,12 @@ class MeshWriter(val maxVertices: Int) {
 
     val triangleCount: Int get() = vertexCount / 3
 
+    /** Drops everything written after [count] vertices (for builders that discard a part). */
+    fun rewind(count: Int) {
+        require(count in 0..vertexCount)
+        vertexCount = count
+    }
+
     // Scratch for transformed corners.
     private var ax = 0f; private var ay = 0f; private var az = 0f
     private var bx = 0f; private var by = 0f; private var bz = 0f
@@ -229,11 +235,16 @@ class MeshWriter(val maxVertices: Int) {
         /** Floats per vertex: position (3), normal (3), packed colour (1). */
         const val STRIDE = 7
 
-        /** Packs a colour; [emissive] (0..1) goes in alpha and makes the face glow regardless of light. */
-        fun pack(r: Float, g: Float, b: Float, emissive: Float = 0f): Float =
-            Color.toFloatBits(r.coerceIn(0f, 1f), g.coerceIn(0f, 1f), b.coerceIn(0f, 1f), emissive.coerceIn(0f, 1f))
+        /** Surface kinds stored in colour alpha; see the scene shader in [Shaders]. */
+        const val GROUND = 0f
+        const val GROUT = 0.5f
+        const val OBJECT = 1f
 
-        fun pack(c: Color, emissive: Float = 0f): Float = pack(c.r, c.g, c.b, emissive)
+        /** Packs a colour; [kind] ([GROUND], [GROUT] or [OBJECT]) goes in alpha. */
+        fun pack(r: Float, g: Float, b: Float, kind: Float = GROUND): Float =
+            Color.toFloatBits(r.coerceIn(0f, 1f), g.coerceIn(0f, 1f), b.coerceIn(0f, 1f), kind.coerceIn(0f, 1f))
+
+        fun pack(c: Color, kind: Float = GROUND): Float = pack(c.r, c.g, c.b, kind)
 
         private val T = ((1.0 + sqrt(5.0)) / 2.0).toFloat()
         private val N = 1f / sqrt(1f + T * T)

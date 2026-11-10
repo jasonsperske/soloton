@@ -11,7 +11,7 @@ class ChunkTrackTest {
         val first = floor((distance - track.length) / track.length).toLong()
         assertEquals(first, sorted.first(), "first index at d=$distance")
         for (i in 1 until sorted.size) assertEquals(sorted[i - 1] + 1, sorted[i], "gap in $sorted")
-        // Slots cover from behind the runner to at least reachAhead in front.
+        // Slots cover from behind the rider to at least reachAhead in front.
         val coveredEnd = (sorted.last() + 1) * track.length
         assertTrue(coveredEnd >= distance + track.reachAhead - track.length, "covers ahead at d=$distance")
     }
@@ -67,8 +67,8 @@ class ChunkTrackTest {
             Scenery.buildChunk(w, i, RoadworkGame.DEFAULT_SEED, rng)
             maxVerts = maxOf(maxVerts, w.vertexCount)
         }
-        // Keeps 13 chunks well under the device triangle budget.
-        assertTrue(maxVerts / 3 * 13 < 40_000, "max ${maxVerts / 3} triangles per chunk")
+        // Keeps every chunk slot together well under the device triangle budget.
+        assertTrue(maxVerts / 3 * RoadworkGame.CHUNK_SLOTS < 30_000, "max ${maxVerts / 3} triangles per chunk")
 
         Scenery.buildChunk(w, 1234L, 99L, rng)
         val a = w.floats.copyOf(w.vertexCount * MeshWriter.STRIDE)
@@ -76,5 +76,25 @@ class ChunkTrackTest {
         Scenery.buildChunk(w, 1234L, 99L, rng)
         val b = w.floats.copyOf(w.vertexCount * MeshWriter.STRIDE)
         assertTrue(a.contentEquals(b), "same index and seed give the same chunk")
+        Scenery.buildChunk(w, 1235L, 99L, rng)
+        val c = w.floats.copyOf(w.vertexCount * MeshWriter.STRIDE)
+        assertTrue(!a.contentEquals(c), "neighbouring chunks differ")
+    }
+
+    @Test
+    fun gameTrackStaysBoundedOverALongRide() {
+        val t = ChunkTrack(Scenery.CHUNK_LENGTH, RoadworkGame.CHUNK_SLOTS)
+        val ride = RideState(6f)
+        val ts = FixedTimestep()
+        var recycled = 0
+        ts.advanceTo(3600.0) {
+            ride.step(it, 6f)
+            recycled += t.update(ride.distanceMeters) { slot, _ -> assertTrue(slot in 0 until RoadworkGame.CHUNK_SLOTS) }
+        }
+        assertEquals(RoadworkGame.CHUNK_SLOTS, t.indices.size)
+        assertContiguous(t, ride.distanceMeters)
+        assertEquals(floor((ride.distanceMeters - t.length) / t.length).toLong() + 1, recycled.toLong())
+        // The slots reach past the near far plane's fade-out of objects.
+        assertTrue(t.reachAhead >= RoadworkGame.NEAR_FAR - Scenery.CHUNK_LENGTH)
     }
 }

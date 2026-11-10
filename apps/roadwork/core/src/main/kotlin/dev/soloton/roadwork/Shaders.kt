@@ -5,8 +5,13 @@ import com.badlogic.gdx.graphics.glutils.ShaderProgram
 /** GLSL ES 1.00 shaders (OpenGL ES 2.0). All lighting and fog is per vertex; fragments only copy colour. */
 internal object Shaders {
     /**
-     * Flat-shaded scene geometry: hemisphere ambient + one low sun, emissive faces (colour alpha),
-     * optional water sparkle and linear distance fog that ends in the sky's horizon colour.
+     * Flat-shaded scene geometry: hemisphere ambient + one sun, optional water sheen, and linear
+     * distance fog that ends in the sky's horizon colour.
+     *
+     * Colour alpha says what kind of surface a vertex belongs to (see [MeshWriter.pack]):
+     * 0 = ground, 0.5 = grout (blends into [u_groutTo] with distance so tile lines never shimmer),
+     * 1 = object (fades fully into the haze toward the end of the near scenery, so trees and
+     * posts never pop in at the chunk horizon).
      */
     const val SCENE_VERTEX = """
 attribute vec3 a_position;
@@ -20,27 +25,32 @@ uniform vec3 u_sunColor;
 uniform vec3 u_ambSky;
 uniform vec3 u_ambGround;
 uniform vec3 u_fogColor;
-uniform vec3 u_fog;   // start, 1 / (end - start), max amount
-uniform float u_glow;
+uniform vec3 u_fog;      // start, 1 / (end - start), max amount
+uniform vec4 u_detail;   // grout fade start, 1 / grout fade length, object fade start, 1 / object fade length
+uniform vec3 u_groutTo;
 uniform float u_water;
 varying vec3 v_color;
 void main() {
     vec3 world = a_position + u_offset;
     vec3 n = a_normal;
-    float diff = max(dot(n, u_sunDir), 0.0);
-    vec3 hemi = mix(u_ambGround, u_ambSky, n.y * 0.5 + 0.5);
-    vec3 lit = a_color.rgb * (hemi + u_sunColor * diff);
     vec3 toCam = u_camPos - world;
     float dist = length(toCam);
+    float kind = a_color.a;
+    float grout = step(0.25, kind) * step(kind, 0.75);
+    float obj = step(0.75, kind);
+    vec3 base = mix(a_color.rgb, u_groutTo, grout * clamp((dist - u_detail.x) * u_detail.y, 0.0, 1.0));
+    float diff = max(dot(n, u_sunDir), 0.0);
+    vec3 hemi = mix(u_ambGround, u_ambSky, n.y * 0.5 + 0.5);
+    vec3 lit = base * (hemi + u_sunColor * diff);
     if (u_water > 0.0) {
         vec3 v = toCam / max(dist, 0.001);
         vec3 r = reflect(-v, n);
-        float spec = pow(max(dot(r, u_sunDir), 0.0), 60.0);
+        float spec = pow(max(dot(r, u_sunDir), 0.0), 40.0);
         float fres = pow(1.0 - max(dot(v, n), 0.0), 4.0);
-        lit = mix(lit, u_fogColor * 0.85, fres * 0.55) + u_sunColor * spec * u_water;
+        lit = mix(lit, u_fogColor * 0.92, fres * 0.6) + u_sunColor * spec * 0.6 * u_water;
     }
-    lit = mix(lit, a_color.rgb * (0.3 + 0.9 * u_glow), a_color.a);
     float f = clamp((dist - u_fog.x) * u_fog.y, 0.0, u_fog.z);
+    f = max(f, obj * clamp((dist - u_detail.z) * u_detail.w, 0.0, 1.0));
     v_color = mix(lit, u_fogColor, f);
     gl_Position = u_projView * vec4(world, 1.0);
 }
@@ -56,7 +66,7 @@ void main() {
 }
 """
 
-    /** Full-screen sky: vertical gradient from the horizon line plus a sun disc and glow. */
+    /** Full-screen sky: vertical gradient from the horizon line plus a sun disc and glow (when the sun is ahead). */
     const val SKY_VERTEX = """
 attribute vec2 a_position;
 void main() {

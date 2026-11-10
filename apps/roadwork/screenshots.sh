@@ -21,7 +21,7 @@ cd "$repo_root"
 . "$repo_root/scripts/lib/toolchain.sh"
 soloton_toolchain_env "$repo_root"
 
-# name:seconds pairs: first light, settled in, five minutes on, and full morning (20 min).
+# name:seconds pairs: the start, settled in, five minutes on, and twenty minutes (end of the light drift).
 shots=(
   "scene-at-0s:0"
   "scene-at-30s:30"

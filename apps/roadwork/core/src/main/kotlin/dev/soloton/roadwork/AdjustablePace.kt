@@ -4,15 +4,15 @@ import dev.soloton.api.PaceSource
 import kotlin.math.roundToInt
 
 /**
- * The default pace: a steady jog that the rider nudges with the HUD's slower/faster buttons.
+ * The default pace: a steady easy ride that the rider nudges with the HUD's slower/faster buttons.
  * Speeds move in [step] increments and stay within [min]..[max] metres per second.
  * Safe to read from any thread.
  */
 class AdjustablePace(
     initial: Float = DEFAULT_METERS_PER_SECOND,
     val step: Float = 0.1f,
-    val min: Float = 1f,
-    val max: Float = 5f,
+    val min: Float = 1.5f,
+    val max: Float = 6f,
 ) : PaceSource {
     init {
         require(step > 0f) { "step must be positive" }
@@ -36,7 +36,7 @@ class AdjustablePace(
     private fun snap(value: Float): Float = ((value / step).roundToInt() * step).coerceIn(min, max)
 
     companion object {
-        /** About 9.7 km/h, an easy jog. */
-        const val DEFAULT_METERS_PER_SECOND = 2.7f
+        /** 10.8 km/h: an easy ride, and a pace the jogger ahead can hold. */
+        const val DEFAULT_METERS_PER_SECOND = 3.0f
     }
 }

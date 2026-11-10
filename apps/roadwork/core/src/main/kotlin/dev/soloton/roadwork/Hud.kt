@@ -13,6 +13,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.glutils.ShaderProgram
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.math.Rectangle
+import dev.soloton.roadwork.HudLayout.Button
 import com.badlogic.gdx.utils.Align
 import dev.soloton.api.MusicState
 import kotlin.math.PI
@@ -30,10 +31,12 @@ import kotlin.math.sin
  *  +-------------------+
  *
  *  +-----+-------------+-----+          +--------------------------+-----+
- *  |  -  |  6:10 /km   |  +  |          | NOW PLAYING              | >>| |
- *  |     |  9.7 km/h   |     |          | Title - Artist           |     |
+ *  |  -  |  10.8 km/h  |  +  |          | NOW PLAYING              | >>| |
+ *  |     |  5:33 /km   |     |          | Title - Artist           |     |
  *  +-----+-------------+-----+          +--------------------------+-----+
  * ```
+ * Speed leads in km/h (the cycling convention) with pace per km below it. The rider's own
+ * handlebars are drawn in the gap between the two bottom panels. Positions come from [HudLayout].
  * Buttons are 120 px squares (at 1080 p). Text is the libGDX default font scaled up and
  * sharpened by an alpha-threshold shader. Text layouts are rebuilt only when their value changes.
  */
@@ -46,7 +49,7 @@ internal class Hud(private val listener: Listener) : InputAdapter() {
         fun onSettings()
     }
 
-    enum class Button { SLOWER, FASTER, SKIP, PAUSE, SETTINGS }
+    private val layout = HudLayout()
 
     private lateinit var camera: OrthographicCamera
     private lateinit var shapes: ShapeRenderer
@@ -54,14 +57,12 @@ internal class Hud(private val listener: Listener) : InputAdapter() {
     private lateinit var font: BitmapFont
     private lateinit var textShader: ShaderProgram
 
-    var width = 1920f
-        private set
+    val width: Float get() = layout.width
     val height = HEIGHT
 
-    private val rects = Array(Button.entries.size) { Rectangle() }
-    private val statsPanel = Rectangle()
-    private val pacePanel = Rectangle()
-    private val musicPanel = Rectangle()
+    private val statsPanel = layout.statsPanel
+    private val pacePanel = layout.pacePanel
+    private val musicPanel = layout.musicPanel
     private var showPace = true
 
     private var pressed: Button? = null
@@ -100,25 +101,12 @@ internal class Hud(private val listener: Listener) : InputAdapter() {
 
     fun resize(screenWidth: Int, screenHeight: Int) {
         if (screenWidth <= 0 || screenHeight <= 0) return
-        width = HEIGHT * screenWidth / screenHeight
+        layout.layout(screenWidth, screenHeight)
         camera.setToOrtho(false, width, HEIGHT)
-        val m = MARGIN
-        val b = BUTTON
-        statsPanel.set(m, HEIGHT - m - 186f, 400f, 186f)
-        rect(Button.SETTINGS).set(width - m - b, HEIGHT - m - b, b, b)
-        rect(Button.PAUSE).set(width - m - b - GAP - b, HEIGHT - m - b, b, b)
-        val pad = 16f
-        val panelH = b + 2 * pad
-        pacePanel.set(m, m, b * 2 + 300f + 4 * pad, panelH)
-        rect(Button.SLOWER).set(pacePanel.x + pad, m + pad, b, b)
-        rect(Button.FASTER).set(pacePanel.x + pacePanel.width - pad - b, m + pad, b, b)
-        val musicW = (width - pacePanel.width - 3 * m - 40f).coerceAtMost(820f)
-        musicPanel.set(width - m - musicW, m, musicW, panelH)
-        rect(Button.SKIP).set(musicPanel.x + musicPanel.width - pad - b, m + pad, b, b)
         shownMusic = null // re-truncate the music line for the new width
     }
 
-    private fun rect(b: Button) = rects[b.ordinal]
+    private fun rect(b: Button) = layout.rect(b)
 
     fun setPaceAdjustable(adjustable: Boolean) { showPace = adjustable }
 
@@ -169,8 +157,8 @@ internal class Hud(private val listener: Listener) : InputAdapter() {
 
         val textLeft = rect(Button.SLOWER).x + BUTTON + 16f
         val textW = rect(Button.FASTER).x - 16f - textLeft
-        drawCentered(paceLayout, SCALE_LARGE, textLeft, textW, pacePanel.y + pacePanel.height - 30f)
-        drawCentered(speedLayout, SCALE_MEDIUM, textLeft, textW, pacePanel.y + 58f)
+        drawCentered(speedLayout, SCALE_LARGE, textLeft, textW, pacePanel.y + pacePanel.height - 30f)
+        drawCentered(paceLayout, SCALE_MEDIUM, textLeft, textW, pacePanel.y + 58f)
 
         val mx = musicPanel.x + 104f
         drawText(musicLabelLayout, SCALE_SMALL, mx, musicPanel.y + musicPanel.height - 30f)
@@ -230,11 +218,11 @@ internal class Hud(private val listener: Listener) : InputAdapter() {
                 val secPerKm = (10000f / tenths).roundToInt()
                 sb.append(secPerKm / 60).append(':'); pad2((secPerKm % 60).toLong()); sb.append(" /km")
             }
-            layoutText(paceLayout, sb, SCALE_LARGE, Color.WHITE)
+            layoutText(paceLayout, sb, SCALE_MEDIUM, TEXT_DIM)
             sb.setLength(0)
             val kmh10 = (tenths * 3.6f).roundToInt() // speed in tenths of km/h
             sb.append(kmh10 / 10).append('.').append(kmh10 % 10).append(" km/h")
-            layoutText(speedLayout, sb, SCALE_MEDIUM, TEXT_DIM)
+            layoutText(speedLayout, sb, SCALE_LARGE, Color.WHITE)
         }
         if (music !== shownMusic) {
             shownMusic = music
@@ -377,7 +365,7 @@ internal class Hud(private val listener: Listener) : InputAdapter() {
     fun hitTest(x: Float, y: Float): Button? {
         for (b in Button.entries) {
             if (!showPace && (b == Button.SLOWER || b == Button.FASTER)) continue
-            val r = rects[b.ordinal]
+            val r = layout.rect(b)
             if (x >= r.x - SLOP && x <= r.x + r.width + SLOP && y >= r.y - SLOP && y <= r.y + r.height + SLOP) return b
         }
         return null
@@ -418,10 +406,8 @@ internal class Hud(private val listener: Listener) : InputAdapter() {
 
     companion object {
         private val STORAGE_PREFIXES = arrayOf("/storage/emulated/0/", "/sdcard/", "/mnt/sdcard/", "/storage/sdcard0/")
-        const val HEIGHT = 1080f
-        const val MARGIN = 36f
-        const val BUTTON = 120f
-        const val GAP = 24f
+        const val HEIGHT = HudLayout.HEIGHT
+        const val BUTTON = HudLayout.BUTTON
         const val SLOP = 12f
         const val SCALE_HUGE = 4.2f
         const val SCALE_LARGE = 3.0f

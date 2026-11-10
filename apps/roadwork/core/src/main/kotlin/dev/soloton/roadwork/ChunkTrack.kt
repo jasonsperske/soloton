@@ -4,7 +4,7 @@ import kotlin.math.floor
 
 /**
  * Which stretch of path each of a fixed number of chunk slots holds. Chunk `i` covers world
- * distance `[i * length, (i + 1) * length)`. As the runner moves on, slots that fall
+ * distance `[i * length, (i + 1) * length)`. As the rider moves on, slots that fall
  * [behindMeters] behind are handed the next index ahead, so the slot count never grows.
  */
 class ChunkTrack(
@@ -23,7 +23,7 @@ class ChunkTrack(
     var firstIndex: Long = -1L
         private set
 
-    /** Distance the slots reach ahead of the runner. */
+    /** Distance the slots reach ahead of the rider. */
     val reachAhead: Float get() = slotCount * length - behindMeters
 
     /**

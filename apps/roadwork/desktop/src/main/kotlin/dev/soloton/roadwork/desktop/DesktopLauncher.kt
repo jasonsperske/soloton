@@ -8,7 +8,8 @@ import java.io.File
 import kotlin.system.exitProcess
 
 private const val USAGE = """Usage: roadwork-desktop [--screenshot <out.png> --at <seconds> [--size <W>x<H>]]
-                        [--stats [--duration <seconds>]] [--silent-music] [--view runner|coach-side|coach-front]
+                        [--stats [--duration <seconds>]] [--silent-music]
+                        [--view rider|jogger-side|jogger-front|jogger-back]
 
 Without arguments, opens a 1280x720 window. Keys: space pause, left/right pace, N skip, S settings.
 --screenshot    render one frame offscreen and write it as PNG, then exit
@@ -17,7 +18,7 @@ Without arguments, opens a 1280x720 window. Keys: space pause, left/right pace, 
 --stats         open a window (vsync off) and log frame time, draw calls and per-frame allocation
 --duration      with --stats, exit after this many seconds (default: run until closed)
 --silent-music  use the no-op music controller instead of the demo track list
---view          camera for inspecting the coach animation (default runner)"""
+--view          camera: rider (default, from the saddle) or a close-up of the jogger"""
 
 fun main(args: Array<String>) {
     val opts = try {
@@ -82,7 +83,7 @@ internal data class Options(
     val stats: Boolean = false,
     val durationSeconds: Float = 0f,
     val silentMusic: Boolean = false,
-    val view: RoadworkGame.View = RoadworkGame.View.RUNNER,
+    val view: RoadworkGame.View = RoadworkGame.View.RIDER,
 )
 
 internal fun parseArgs(args: Array<String>): Options {
@@ -109,10 +110,11 @@ internal fun parseArgs(args: Array<String>): Options {
             "--silent-music" -> opts = opts.copy(silentMusic = true)
             "--view" -> opts = opts.copy(
                 view = when (value(a)) {
-                    "runner" -> RoadworkGame.View.RUNNER
-                    "coach-side" -> RoadworkGame.View.COACH_SIDE
-                    "coach-front" -> RoadworkGame.View.COACH_FRONT
-                    else -> throw IllegalArgumentException("--view must be runner, coach-side or coach-front")
+                    "rider" -> RoadworkGame.View.RIDER
+                    "jogger-side" -> RoadworkGame.View.JOGGER_SIDE
+                    "jogger-front" -> RoadworkGame.View.JOGGER_FRONT
+                    "jogger-back" -> RoadworkGame.View.JOGGER_BACK
+                    else -> throw IllegalArgumentException("--view must be rider, jogger-side, jogger-front or jogger-back")
                 },
             )
             "-h", "--help" -> opts = opts.copy(help = true)
