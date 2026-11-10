@@ -18,10 +18,12 @@ mkdir -p "$out"
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$repo_root"
 
-# name:seconds pairs. WP3 adds scene shots here (for example scene-at-30s:30).
+# name:seconds pairs: first light, settled in, five minutes on, and full morning (20 min).
 shots=(
-  "cube-at-0s:0"
-  "cube-at-2s:2"
+  "scene-at-0s:0"
+  "scene-at-30s:30"
+  "scene-at-300s:300"
+  "scene-at-1200s:1200"
 )
 
 ./gradlew --quiet :apps:roadwork:desktop:installDist
