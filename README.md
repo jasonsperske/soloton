@@ -4,21 +4,21 @@ Homemade apps for a first-generation Peloton bike tablet (Android 7.0), sideload
 
 Not affiliated with or endorsed by Peloton. Sideloading is at your own risk.
 
+![Roadwork: riding along the riverfront behind a jogger](docs/images/roadwork.png)
+
 ## Status
 
-Scaffold in place. The Gradle monorepo builds an installable `roadwork` APK (API 24+) holding a placeholder spinning cube, and a desktop launcher renders screenshots. CI workflows, the real scene and the music library are next; see [docs/PLAN.md](docs/PLAN.md).
-
-![Roadwork placeholder](apps/roadwork/docs/cube-at-2s.png)
+The first app, `roadwork`, is complete and runs on an emulator shaped like the gen 1 tablet (Android 7.0, 1920x1080). Every push builds an APK and publishes it to the [`latest` release](../../releases/tag/latest). Progress, screenshots and downloads are on the [progress site](https://jasonsperske.github.io/soloton/). It has not yet been measured on a real bike.
 
 ## Apps
 
 | App | What it is | Status |
 |---|---|---|
-| `roadwork` | First-person bike ride along a sunny city riverfront, pacing a jogger out on their roadwork, with shuffled music from a folder on the tablet | Placeholder scene builds |
+| `roadwork` | First-person bike ride along a sunny city riverfront, pacing a jogger out on their roadwork, with shuffled music from a folder on the tablet | Working on the gen 1 emulator |
 
 ## Using it
 
-- **Install on a bike:** once builds exist, download an APK from the `latest` release and install it with `adb install -r`, or download and open it on the bike.
+- **Install on a bike:** download `roadwork.apk` from the [`latest` release](../../releases/tag/latest) and install it with `adb install -r`, or download and open it on the bike. See [docs/INSTALL.md](docs/INSTALL.md).
 - **Build your own:** fork the repo; CI builds APKs with no setup. See [docs/CI_SETUP.md](docs/CI_SETUP.md) for signing so updates install over each other.
 - **Build locally:** run `scripts/doctor.sh --fix` to check and install the JDK and Android SDK, then `./gradlew :apps:roadwork:android:assembleDebug`. See [docs/BUILDING.md](docs/BUILDING.md).
 - **Music:** copy your own audio files to a folder on the tablet (default `/sdcard/Music/soloton`) and point the app at it in settings. No music is bundled or downloaded.
@@ -29,6 +29,8 @@ Scaffold in place. The Gradle monorepo builds an installable `roadwork` APK (API
 - [docs/BUILDING.md](docs/BUILDING.md): prerequisites and build commands
 - [docs/ADDING_AN_APP.md](docs/ADDING_AN_APP.md): adding an app to the monorepo
 - [docs/CI_SETUP.md](docs/CI_SETUP.md): CI, signing, and releases
+- [docs/INSTALL.md](docs/INSTALL.md): installing on the bike and copying music
+- [docs/DEVICE.md](docs/DEVICE.md): the gen 1 tablet spec and its emulator
 
 ## License
 
