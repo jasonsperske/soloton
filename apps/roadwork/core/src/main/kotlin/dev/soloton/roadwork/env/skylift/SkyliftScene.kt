@@ -19,12 +19,14 @@ import dev.soloton.roadwork.SceneMeshes
 import dev.soloton.roadwork.Shaders
 
 /**
- * The mesa: a desert trail the bike rides along and, as the rider turns the resistance up, lifts
- * off from. The harder the bike is set, the higher it flies ([SkyliftMotion.liftFor]) and the more
- * often drifters come the other way; the bike swerves round the ones in its path.
+ * The mesa: a desert trail that a space runner ([SpaceRunnerModel]) runs along at the rider's pace
+ * and, as the rider turns the resistance up, lifts off from. The harder the bike is set, the
+ * higher the runner flies ([SkyliftMotion.liftFor]) and the more often drifters come the other
+ * way; the runner swerves round the ones in the way. The view follows from behind the runner, so
+ * no bike is drawn.
  *
- * Draw order per frame: sky; the far sand and mesas (no depth); the near chunks and the traffic
- * (fresh depth). The game then draws the rider's handlebars and the HUD.
+ * Draw order per frame: sky; the far sand and mesas (no depth); the near chunks, the traffic and
+ * the runner (fresh depth). The game then draws the HUD.
  */
 class SkyliftScene(private val seed: Long) : EnvironmentScene {
     private val motion = SkyliftMotion(seed)
@@ -33,6 +35,9 @@ class SkyliftScene(private val seed: Long) : EnvironmentScene {
     private val rng = Rng(seed)
 
     override val light: SceneLight get() = sky
+
+    /** The view follows the runner from behind, so the game does not draw the rider's handlebars. */
+    override val riderView: Boolean get() = false
 
     private lateinit var camera: PerspectiveCamera
     private lateinit var farCamera: PerspectiveCamera
@@ -46,6 +51,9 @@ class SkyliftScene(private val seed: Long) : EnvironmentScene {
     private var farVertices = 0
     private lateinit var chunkWriter: MeshWriter
     private lateinit var trafficWriter: MeshWriter
+    private lateinit var runnerMesh: Mesh
+    private lateinit var runnerWriter: MeshWriter
+    private val runner = SpaceRunnerModel()
 
     private var viewWidth = 1
     private var viewHeight = 1
@@ -71,6 +79,8 @@ class SkyliftScene(private val seed: Long) : EnvironmentScene {
 
         trafficWriter = MeshWriter(MesaScenery.TRAFFIC_MAX_VERTICES)
         trafficMesh = SceneMeshes.create(false, MesaScenery.TRAFFIC_MAX_VERTICES)
+        runnerWriter = MeshWriter(SpaceRunnerModel.MAX_VERTICES)
+        runnerMesh = SceneMeshes.create(false, SpaceRunnerModel.MAX_VERTICES)
 
         camera = PerspectiveCamera(RiderCamera.FOV, 16f, 9f).apply { near = 0.3f; far = NEAR_FAR }
         farCamera = PerspectiveCamera(RiderCamera.FOV, 16f, 9f).apply { near = 2f; far = 12000f }
@@ -99,7 +109,7 @@ class SkyliftScene(private val seed: Long) : EnvironmentScene {
     override fun draw(ride: RideState) {
         val distance = ride.distanceMeters
         track.update(distance) { slot, index -> buildChunk(slot, index) }
-        placeCameras(ride)
+        placeCameras()
 
         val gl = Gdx.gl
         gl.glDepthMask(true)
@@ -146,17 +156,26 @@ class SkyliftScene(private val seed: Long) : EnvironmentScene {
             sceneShader.setUniformf("u_offset", 0f, 0f, 0f)
             trafficMesh.render(sceneShader, GL20.GL_TRIANGLES, 0, trafficWriter.vertexCount)
         }
+        runner.build(
+            runnerWriter, motion.dodge, motion.altitude, ride.crankAngle, ride.speed,
+            (motion.dodgeSpeed * RUNNER_LEAN_PER_SPEED).coerceIn(-RUNNER_MAX_LEAN, RUNNER_MAX_LEAN),
+            (ride.elapsedSeconds % 60.0).toFloat(),
+        )
+        SceneMeshes.upload(runnerMesh, runnerWriter)
+        sceneShader.setUniformf("u_offset", 0f, 0f, 0f)
+        runnerMesh.render(sceneShader, GL20.GL_TRIANGLES, 0, runnerWriter.vertexCount)
     }
 
-    /** The rider's view, raised by the lift, moved sideways by the swerve and leaning into it. */
-    private fun placeCameras(ride: RideState) {
-        RiderCamera.place(camera, ride)
-        camera.position.x += motion.dodge
-        camera.position.y += motion.altitude
-        // Higher up, look down a little more, so the ground stays in view.
-        camera.direction.y -= EXTRA_PITCH * motion.altitude / SkyliftMotion.MAX_ALTITUDE
-        camera.direction.nor()
-        camera.up.x += (motion.dodgeSpeed * LEAN_PER_SPEED).coerceIn(-MAX_LEAN, MAX_LEAN)
+    /**
+     * A chase view: behind and a little above the runner, following the lift, trailing the swerve
+     * and leaning into it. Higher up the camera rides higher over the runner, so the ground stays
+     * in view.
+     */
+    private fun placeCameras() {
+        val lift = motion.altitude / SkyliftMotion.MAX_ALTITUDE
+        camera.position.set(motion.dodge * CAMERA_FOLLOW, motion.altitude + CAMERA_HEIGHT + CAMERA_RISE * lift, CAMERA_BACK)
+        camera.direction.set(motion.dodge, motion.altitude + LOOK_HEIGHT, -LOOK_AHEAD).sub(camera.position).nor()
+        camera.up.set((motion.dodgeSpeed * LEAN_PER_SPEED).coerceIn(-MAX_LEAN, MAX_LEAN), 1f, 0f)
         camera.normalizeUp()
         camera.update()
         farCamera.position.set(camera.position)
@@ -198,6 +217,7 @@ class SkyliftScene(private val seed: Long) : EnvironmentScene {
     override fun dispose() {
         if (::chunkMeshes.isInitialized) chunkMeshes.forEach { it.dispose() }
         if (::trafficMesh.isInitialized) trafficMesh.dispose()
+        if (::runnerMesh.isInitialized) runnerMesh.dispose()
         if (::farMesh.isInitialized) farMesh.dispose()
         if (::skyMesh.isInitialized) skyMesh.dispose()
         if (::skyShader.isInitialized) skyShader.dispose()
@@ -217,9 +237,20 @@ class SkyliftScene(private val seed: Long) : EnvironmentScene {
         const val RIPPLE_FADE_LENGTH = 160f
         /** Spires, plants, floating rocks and traffic fade into the haze from here to the near far plane. */
         const val OBJECT_FADE_START = 300f
-        /** Extra downward tilt of the view at full altitude. */
-        const val EXTRA_PITCH = 0.14f
-        const val LEAN_PER_SPEED = 0.035f
-        const val MAX_LEAN = 0.12f
+        /** The camera sits this far behind the runner and this far above the runner's feet. */
+        const val CAMERA_BACK = 6.2f
+        const val CAMERA_HEIGHT = 2.3f
+        /** Extra camera height over the runner at full altitude. */
+        const val CAMERA_RISE = 1.2f
+        /** How much of the runner's swerve the camera follows. */
+        const val CAMERA_FOLLOW = 0.55f
+        /** The camera looks at a point this high above the runner's feet and this far ahead of the runner. */
+        const val LOOK_HEIGHT = 1.3f
+        const val LOOK_AHEAD = 7f
+        const val LEAN_PER_SPEED = 0.02f
+        const val MAX_LEAN = 0.08f
+        /** The runner's roll into a swerve, in degrees per metre per second of sideways speed. */
+        const val RUNNER_LEAN_PER_SPEED = 5f
+        const val RUNNER_MAX_LEAN = 20f
     }
 }

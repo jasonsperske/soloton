@@ -1,6 +1,6 @@
 # Environments
 
-An **environment** in Roadwork is a 3D scene paired with the rider's choice of music for it. Each environment starts with one game's folder of music; in the app's music settings the rider can add other folders and tick or untick individual songs ([INSTALL.md](INSTALL.md#choosing-folders-and-songs-on-the-tablet)). Riding in an environment plays only its ticked songs, shuffled without repeats. The rider, the ride and the controls are the same everywhere: elapsed time, distance, pace, the handlebars at the bottom of the screen, the HUD and the music buttons belong to the app, and the world around them belongs to the environment.
+An **environment** in Roadwork is a 3D scene paired with the rider's choice of music for it. Each environment starts with one game's folder of music; in the app's music settings the rider can add other folders and tick or untick individual songs ([INSTALL.md](INSTALL.md#choosing-folders-and-songs-on-the-tablet)). Riding in an environment plays only its ticked songs, shuffled without repeats. The ride and the controls are the same everywhere: elapsed time, distance, pace, the HUD and the music buttons belong to the app, and the world around them belongs to the environment. The app also draws the rider's handlebars at the bottom of the screen, unless the environment has a view of its own (Skylift Mesa follows a runner instead).
 
 ## The registry
 
@@ -21,14 +21,14 @@ The game passes the bike's resistance to every scene as `RideState.resistance`, 
 
 ### Skylift Mesa
 
-A desert trail under a teal sky ([on the ground](../apps/roadwork/docs/skylift-mesa-ground.png), [climbing](../apps/roadwork/docs/skylift-mesa-climbing.png), [high up](../apps/roadwork/docs/skylift-mesa-high.png)). Resistance decides how the ride goes:
+A desert trail under a teal sky ([on the ground](../apps/roadwork/docs/skylift-mesa-ground.png), [climbing](../apps/roadwork/docs/skylift-mesa-climbing.png), [high up](../apps/roadwork/docs/skylift-mesa-high.png)). No bike is shown here: the view follows a space runner from behind, an original character in a white suit with a thruster pack. The runner moves at the rider's pace, one stride cycle per turn of the cranks, and stands still when the rider stops. Resistance decides how the ride goes:
 
-- **Up to 15%:** the bike stays on the trail. Dark boulders bounce along the ground toward it and pale crystal "drifters" pass overhead and alongside.
-- **Above 15%:** the bike lifts off and climbs, up to 40 m with the knob at its end, among rocks that hang in the air. Turning the resistance down brings it back to the trail.
+- **Up to 15%:** the runner runs along the trail. Dark boulders bounce along the ground toward them and pale crystal "drifters" pass overhead and alongside.
+- **Above 15%:** the runner lifts off, tips forward into flight with the thrusters lit, and climbs, up to 40 m with the knob at its end, among rocks that hang in the air. Turning the resistance down brings them back to the trail.
 - **Traffic:** things come the other way about once every eight seconds with no resistance and more than once a second at full resistance, and faster too. None come while the rider is stopped.
-- **Dodging:** the rider cannot steer, so the bike swerves by itself around anything on a collision course and returns to the middle of the trail. Nothing can be hit and there is no score.
+- **Dodging:** the rider cannot steer, so the runner swerves by themself around anything on a collision course and returns to the middle of the trail. Nothing can be hit and there is no score.
 
-The rules are in `SkyliftMotion` (pure maths, unit tested); the geometry is in `MesaScenery`.
+The rules are in `SkyliftMotion` (pure maths, unit tested); the geometry is in `MesaScenery` and the runner in `SpaceRunnerModel`. A scene that has its own view, as this one does, returns false from `riderView`, and the game then leaves the handlebars out.
 
 ## The picker
 

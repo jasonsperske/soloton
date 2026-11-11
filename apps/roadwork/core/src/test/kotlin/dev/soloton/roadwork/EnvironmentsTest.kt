@@ -155,8 +155,10 @@ class EnvironmentsTest {
             for (v in scene.inspectionViews) assertTrue(Environment.isValidId(v), "view '$v' of ${e.id}")
             assertFalse(scene.setInspectionView("no-such-view"))
             assertTrue(scene.setInspectionView(null))
-            assertTrue(scene.riderView)
         }
+        // The riverfront is seen from the saddle, handlebars and all; the mesa follows its runner instead.
+        assertTrue(Environments.byId("riverfront").createScene(RoadworkGame.DEFAULT_SEED).riderView)
+        assertFalse(Environments.byId("skylift-mesa").createScene(RoadworkGame.DEFAULT_SEED).riderView)
     }
 
     // ---- switching ----
