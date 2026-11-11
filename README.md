@@ -14,7 +14,7 @@ The first app, `roadwork`, is complete and runs on an emulator shaped like the g
 
 | App | What it is | Status |
 |---|---|---|
-| `roadwork` | First-person bike ride through an [environment](docs/ENVIRONMENTS.md): a 3D scene paired with music you choose for it from the folders on the tablet, shuffled. It opens on a picker of environments. The first is a sunny city riverfront, pacing a jogger out on their roadwork | Working on the gen 1 emulator; bike sensor data reported working on the owner's bike |
+| `roadwork` | First-person bike ride through an [environment](docs/ENVIRONMENTS.md): a 3D scene paired with music you choose for it from the folders on the tablet, shuffled. It opens on a picker of environments. The first is a sunny city riverfront, pacing a jogger out on their roadwork. The second is a desert mesa where the bike's resistance lifts you off the trail: the harder it is set, the higher you fly and the busier the sky | Working on the gen 1 emulator; bike sensor data reported working on the owner's bike |
 
 ## Using it
 

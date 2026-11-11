@@ -123,7 +123,7 @@ Wave 1: WP1 alone. Wave 2: WP2, WP3, WP4 in parallel, each in its own worktree. 
 
 Next: more Roadwork levels, from the owner's designs.
 
-Idea from the owner (2026-11-10): use resistance as a difficulty setting in some environments. It depends on resistance reading on the real bike as the other sensor data does, which is untested; check the knob end to end on the diagnostics screen first (`libs/bike/README.md`).
+Resistance as a difficulty setting (the owner's idea, 2026-11-10) is built: every scene is given the bike's resistance, and the second environment, Skylift Mesa, flies higher and gets busier as it rises (`docs/ENVIRONMENTS.md`). It still depends on resistance reading on the real bike as the other sensor data does, which is untested; check the knob end to end on the diagnostics screen (`libs/bike/README.md`).
 
 ## Rules for every agent
 

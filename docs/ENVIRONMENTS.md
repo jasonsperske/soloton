@@ -9,10 +9,26 @@ Environments are listed in `Environments.all` (`apps/roadwork/core/src/main/kotl
 | id | Title | Default music folder (under the music root) | Package |
 |---|---|---|---|
 | `riverfront` | Riverfront Roadwork | `Mike Tyson's Punch-Out!!` | `dev.soloton.roadwork.env.riverfront` |
+| `skylift-mesa` | Skylift Mesa | `Space Harrier II` | `dev.soloton.roadwork.env.skylift` |
 
 - **id**: stable and kebab-case. The tablet saves the last environment ridden and each environment's music selection under it, and it is typed on the command line, so never rename one.
 - **Title**: shown to the rider (on the picker, under the PAUSED banner and in music settings).
 - **Default music folder**: the name of one sub-folder of the music root (`/sdcard/Music/soloton` by default; see [INSTALL.md](INSTALL.md#copying-music-to-the-tablet)). It is what plays until the rider chooses folders and songs for the environment. It is used as a literal folder name, so apostrophes, `!!` and spaces are fine. `null` starts with everything under the root.
+
+## Resistance
+
+The game passes the bike's resistance to every scene as `RideState.resistance`, a fraction from 0 to 1 eased over about half a second. A scene may use it as a difficulty or intensity setting, or ignore it (the riverfront does). It comes from the bike's resistance knob when the bike's sensors are live ([libs/bike](../libs/bike/README.md)). Without a bike it is set by hand: **R** raises it and **F** lowers it by 5% during a ride (Page Up and Page Down do the same), and the desktop launcher takes `--resistance <0-100>`. There is no on-screen control for it.
+
+### Skylift Mesa
+
+A desert trail under a teal sky ([on the ground](../apps/roadwork/docs/skylift-mesa-ground.png), [climbing](../apps/roadwork/docs/skylift-mesa-climbing.png), [high up](../apps/roadwork/docs/skylift-mesa-high.png)). Resistance decides how the ride goes:
+
+- **Up to 15%:** the bike stays on the trail. Dark boulders bounce along the ground toward it and pale crystal "drifters" pass overhead and alongside.
+- **Above 15%:** the bike lifts off and climbs, up to 40 m with the knob at its end, among rocks that hang in the air. Turning the resistance down brings it back to the trail.
+- **Traffic:** things come the other way about once every eight seconds with no resistance and more than once a second at full resistance, and faster too. None come while the rider is stopped.
+- **Dodging:** the rider cannot steer, so the bike swerves by itself around anything on a collision course and returns to the middle of the trail. Nothing can be hit and there is no score.
+
+The rules are in `SkyliftMotion` (pure maths, unit tested); the geometry is in `MesaScenery`.
 
 ## The picker
 
@@ -60,7 +76,7 @@ Each environment has a playlist, keyed by its id: an ordered list of folders and
 | `PlatformActions.openMusicSettings(playlist)` | `libs/api`, implemented by the launcher | Opens the settings screen for that playlist |
 | `MusicSelection`, `SelectionStore`, `SelectionResolver` | `libs/music/.../MusicSelection.kt` | The saved folders and unticked songs, and what they come to on disk |
 
-Shared building blocks a scene can use, all in `dev.soloton.roadwork`: `MeshWriter` and `SceneMeshes` (flat-shaded vertex-colour meshes), `Shaders` (the scene shader with sun, hemisphere ambient and fog), `Rng` (deterministic random numbers), `ChunkTrack` (recycling stretches of an endless path), `RiderCamera` (the view from the saddle), `RideState` (time, distance, speed, wheel and crank angles).
+Shared building blocks a scene can use, all in `dev.soloton.roadwork`: `MeshWriter` and `SceneMeshes` (flat-shaded vertex-colour meshes), `Shaders` (the scene shader with sun, hemisphere ambient and fog), `Rng` (deterministic random numbers), `ChunkTrack` (recycling stretches of an endless path), `RiderCamera` (the view from the saddle), `RideState` (time, distance, speed, resistance, wheel and crank angles).
 
 Rules for a scene:
 
