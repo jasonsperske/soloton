@@ -108,7 +108,7 @@ Owns `apps/roadwork/android`. Wires the scene, music, immersive mode, icon, and 
 Done when: the CI-built APK installs and runs on API 24, the skip button changes tracks, and changing the music folder in settings takes effect without restarting.
 
 ### WP6 Bike cadence as pace (operational)
-Research is in `docs/BIKE_SENSORS.md`; the code is `libs/bike`, and Roadwork takes its pace from cadence with the buttons as fallback. The owner reported on 2026-11-10 that the sensor data works on the real bike. Resistance has not been tested there, and which route connected and whether the units match are not yet recorded.
+Research is in `docs/BIKE_SENSORS.md`; the code is the bike library (`libs/bike-core` and `libs/bike`), and Roadwork takes its pace from cadence with the buttons as fallback. The owner reported on 2026-11-10 that the sensor data works on the real bike. Resistance has not been tested there, and which route connected and whether the units match are not yet recorded.
 
 ## Order of work
 

@@ -1,6 +1,6 @@
 package dev.soloton.roadwork
 
-import dev.soloton.api.PaceSource
+import dev.soloton.bike.PaceSource
 import kotlin.math.roundToInt
 
 /**

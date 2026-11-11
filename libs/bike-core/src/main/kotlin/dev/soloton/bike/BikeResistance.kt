@@ -1,7 +1,6 @@
-// SPDX-License-Identifier: GPL-3.0-only
+// SPDX-License-Identifier: GPL-2.0-or-later
 package dev.soloton.bike
 
-import dev.soloton.api.ResistanceSource
 
 /**
  * The position of the bike's resistance knob as a 0 to 1 fraction, from [BikeReading]s.

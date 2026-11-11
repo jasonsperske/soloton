@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-only
+// SPDX-License-Identifier: GPL-2.0-or-later
 package dev.soloton.bike
 
 /** A point-in-time copy of everything [BikeSensors] knows, for display and for the report. */

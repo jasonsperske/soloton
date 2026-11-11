@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-only
+// SPDX-License-Identifier: GPL-2.0-or-later
 package dev.soloton.bike
 
 import android.content.Context
@@ -9,7 +9,6 @@ import android.widget.Button
 import android.widget.TextView
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import dev.soloton.api.PaceSource
 import dev.soloton.bike.fake.FakeScript
 import dev.soloton.bike.fake.FakeStatus
 import org.junit.After

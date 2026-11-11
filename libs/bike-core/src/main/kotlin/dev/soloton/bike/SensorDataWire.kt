@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-only
+// SPDX-License-Identifier: GPL-2.0-or-later
 package dev.soloton.bike
 
 /** The three values the legacy service is asked for, with the bike board's command byte for each. */

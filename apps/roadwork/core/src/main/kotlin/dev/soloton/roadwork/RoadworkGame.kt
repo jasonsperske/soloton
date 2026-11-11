@@ -8,9 +8,9 @@ import dev.soloton.api.MemorySettingsStore
 import dev.soloton.api.MusicController
 import dev.soloton.api.MusicState
 import dev.soloton.api.NoPlatformActions
-import dev.soloton.api.PaceSource
+import dev.soloton.bike.PaceSource
 import dev.soloton.api.PlatformActions
-import dev.soloton.api.ResistanceSource
+import dev.soloton.bike.ResistanceSource
 import dev.soloton.api.SettingsStore
 import dev.soloton.api.SilentMusicController
 
