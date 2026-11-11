@@ -1,5 +1,6 @@
 package dev.soloton.roadwork
 
+import dev.soloton.roadwork.env.nightstreets.NightStreets
 import dev.soloton.roadwork.env.pedalcraft.Pedalcraft
 import dev.soloton.roadwork.env.riverfront.Riverfront
 import dev.soloton.roadwork.env.skylift.Skylift
@@ -11,6 +12,7 @@ object Environments {
         Riverfront.environment,
         Skylift.environment,
         Pedalcraft.environment,
+        NightStreets.environment,
     )
 
     val default: Environment get() = all.first()

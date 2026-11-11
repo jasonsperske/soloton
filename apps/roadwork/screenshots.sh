@@ -77,6 +77,16 @@ for shot in "pedalcraft-island-glider:400:60" "pedalcraft-island-landing:1432:0"
   [[ -s "$out/$name.png" ]] || { echo "missing $out/$name.png" >&2; exit 1; }
 done
 
+# Night Streets: three kinds of district from the saddle (name:seconds), then the neighbourhood from overhead.
+for shot in "night-streets-downtown:20" "night-streets-park:420" "night-streets-houses:158"; do
+  name="${shot%%:*}"
+  at="${shot##*:}"
+  run "$launcher" --env night-streets --screenshot "$out/$name.png" --at "$at"
+  [[ -s "$out/$name.png" ]] || { echo "missing $out/$name.png" >&2; exit 1; }
+done
+run "$launcher" --env night-streets --view overhead --screenshot "$out/night-streets-overhead.png" --at 60
+[[ -s "$out/night-streets-overhead.png" ]] || { echo "missing $out/night-streets-overhead.png" >&2; exit 1; }
+
 # The environment picker, the screen the app opens on.
 run "$launcher" --picker --screenshot "$out/picker.png"
 [[ -s "$out/picker.png" ]] || { echo "missing $out/picker.png" >&2; exit 1; }

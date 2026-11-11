@@ -11,6 +11,7 @@ Environments are listed in `Environments.all` (`apps/roadwork/core/src/main/kotl
 | `riverfront` | Riverfront Roadwork | `Mike Tyson's Punch-Out!!` | `dev.soloton.roadwork.env.riverfront` |
 | `skylift-mesa` | Skylift Mesa | `Space Harrier II` | `dev.soloton.roadwork.env.skylift` |
 | `pedalcraft-island` | Pedalcraft Island | `Pilotwings` | `dev.soloton.roadwork.env.pedalcraft` |
+| `night-streets` | Night Streets | `Sim City` | `dev.soloton.roadwork.env.nightstreets` |
 
 - **id**: stable and kebab-case. The tablet saves the last environment ridden and each environment's music selection under it, and it is typed on the command line, so never rename one.
 - **Title**: shown to the rider (on the picker, under the PAUSED banner and in music settings).
@@ -18,7 +19,7 @@ Environments are listed in `Environments.all` (`apps/roadwork/core/src/main/kotl
 
 ## Resistance
 
-The game passes the bike's resistance to every scene as `RideState.resistance`, a fraction from 0 to 1 eased over about half a second. A scene may use it as a difficulty or intensity setting, or ignore it (the riverfront does). Skylift Mesa and Pedalcraft Island both turn it into height. It comes from the bike's resistance knob when the bike's sensors are live ([libs/bike](../libs/bike/README.md)). Without a bike it is set by hand: **R** raises it and **F** lowers it by 5% during a ride (Page Up and Page Down do the same), and the desktop launcher takes `--resistance <0-100>`. There is no on-screen control for it.
+The game passes the bike's resistance to every scene as `RideState.resistance`, a fraction from 0 to 1 eased over about half a second. A scene may use it as a difficulty or intensity setting, or ignore it (the riverfront does). Skylift Mesa and Pedalcraft Island both turn it into height; Night Streets does not use it. It comes from the bike's resistance knob when the bike's sensors are live ([libs/bike](../libs/bike/README.md)). Without a bike it is set by hand: **R** raises it and **F** lowers it by 5% during a ride (Page Up and Page Down do the same), and the desktop launcher takes `--resistance <0-100>`. There is no on-screen control for it.
 
 ### Skylift Mesa
 
@@ -49,6 +50,18 @@ The ride is a tour of three legs that join end to end and then repeat:
 - **Take-off and landing** are flown for you. A craft rolls along its strip, climbs out, circles the island, lines up, descends without dropping below any ground still ahead of it, touches down and rolls to a stop. The next craft then starts from the same spot.
 
 `IslandTerrain` is the island as a height for any point, with the three landing spots levelled into it. `FlightRoute` is one leg's path and height profile, `FlightMotion` the tour and the craft's pose; all three are pure maths with unit tests (`FlightTest`). `IslandMeshes` builds the land in tiles, the shallows, sea, clouds, strip markings and buildings; `CraftModel` builds the three craft. Development cameras: `--view overview` shows the whole island from above and `--view craft-side` the craft from the side.
+
+### Night Streets
+
+A bike ride through an endless city at night ([downtown](../apps/roadwork/docs/night-streets-downtown.png), [a park](../apps/roadwork/docs/night-streets-park.png), [houses](../apps/roadwork/docs/night-streets-houses.png), [from overhead](../apps/roadwork/docs/night-streets-overhead.png)). The view is from the saddle, with the handlebars. The city, its buildings and its cars are original designs. It does not use resistance.
+
+- **The route:** the rider keeps to the bike lane at the kerb. At every junction they go straight on (half the time), left or right (a quarter each), never back the way they came. The same seed gives the same route.
+- **The city** is a grid of streets 100 m apart and is built a block at a time as the rider reaches it, the same every time they return. Blocks come in districts: towers downtown, mid-rise blocks around that, houses with gardens further out, and about one block in ten a park. Windows are lit or dark at random, street lamps line the pavements, and a ring of distant towers stands on the horizon.
+- **Cars** drive the streets within three blocks of the rider, thirty at a time, turning at random. They stop for red lights (each street has green for 10 s, with 4 s of every light red in between), give way before turning left, and keep a gap behind whatever is ahead.
+- **The rider has right of way.** A rider cannot stop for a light, so no car enters a junction while the rider is within 25 m of its middle, and a car slows for a rider in its path. A car in the lane beside the bike lane passes normally.
+- **How far you can see:** about 200 m, where the city fades into the night haze. That is also what keeps it inside the tablet's budget: about 27,000 triangles and 18 draw calls a frame.
+
+`CityGrid` is the street geometry and the traffic lights, `CityRider` the rider's route, and `CityTraffic` the cars: all pure maths with unit tests (`CityTest`), which run twenty simulated minutes of traffic and check that no two cars, and no car and the rider, come closer than a passing lane apart. `CityBlocks` builds the blocks, cars and signal lamps. The development camera `--view overhead` looks down on the rider's neighbourhood without the haze.
 
 ## The picker
 
