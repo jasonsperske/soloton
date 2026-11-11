@@ -3,6 +3,7 @@ package dev.soloton.roadwork.desktop
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration
 import dev.soloton.api.SilentMusicController
+import dev.soloton.roadwork.AdjustableResistance
 import dev.soloton.roadwork.Environment
 import dev.soloton.roadwork.Environments
 import dev.soloton.roadwork.RoadworkGame
@@ -12,10 +13,12 @@ import kotlin.system.exitProcess
 private const val USAGE = """Usage: roadwork-desktop [--screenshot <out.png> [--at <seconds>] [--size <W>x<H>]]
                         [--stats [--duration <seconds>]] [--silent-music]
                         [--env <id>] [--picker] [--list-envs] [--view rider|<name>]
+                        [--resistance <0-100>]
 
 Without arguments, opens a 1280x720 window on the environment picker.
 Picker keys: left/right choose, Enter ride, Escape quit.
-Ride keys: space pause, left/right pace, N skip, S settings, Escape or E back to the picker.
+Ride keys: space pause, left/right pace, R/F raise or lower resistance, N skip, S settings,
+           Escape or E back to the picker.
 --screenshot    render one frame offscreen and write it as PNG, then exit: a ride (in --env, or the
                 default environment), or with --picker the picker
 --at            simulated seconds to advance to (fixed 1/60 s steps), default 0
@@ -29,6 +32,8 @@ Ride keys: space pause, left/right pace, N skip, S settings, Escape or E back to
 --list-envs     print each environment's id, title and music folder, then exit
 --view          camera: rider (default, from the saddle) or one of the environment's development
                 cameras (riverfront: jogger-side, jogger-front, jogger-back)
+--resistance    the bike's resistance in percent to start with, default 0 (environments that use
+                it, such as skylift-mesa, fly higher and get busier as it rises)
 
 Music is a silent demo. Set SOLOTON_MUSIC_DIR to a folder holding one sub-folder per game (the
 layout of the tablet's music root) to see real song names and counts; see .env.example."""
@@ -66,7 +71,12 @@ fun main(args: Array<String>) {
     }
 
     val music = if (opts.silentMusic) SilentMusicController("(desktop)") else DemoMusicController(DemoMusicController.musicDirFromEnvironment())
-    val game = RoadworkGame(music = music, environment = environment, startOnPicker = opts.startsOnPicker)
+    val game = RoadworkGame(
+        music = music,
+        environment = environment,
+        startOnPicker = opts.startsOnPicker,
+        resistance = AdjustableResistance(opts.resistancePercent / 100f),
+    )
     game.setInspectionView(opts.view)
     val shot = opts.screenshot
     if (shot == null) {
@@ -117,6 +127,8 @@ internal data class Options(
     val view: String? = null,
     /** Start on the picker even where a ride is the default (screenshots, stats). */
     val picker: Boolean = false,
+    /** The resistance the ride starts with, 0 to 100. */
+    val resistancePercent: Float = 0f,
 ) {
     /** The window opens on the picker; `--env`, `--screenshot` and `--stats` go straight to a ride unless `--picker` is given. */
     val startsOnPicker: Boolean get() = picker || (env == null && screenshot == null && !stats)
@@ -158,6 +170,10 @@ internal fun parseArgs(args: Array<String>): Options {
             "--silent-music" -> opts = opts.copy(silentMusic = true)
             "--env" -> opts = opts.copy(env = value(a))
             "--picker" -> opts = opts.copy(picker = true)
+            "--resistance" -> opts = opts.copy(
+                resistancePercent = value(a).toFloatOrNull()?.takeIf { it in 0f..100f }
+                    ?: throw IllegalArgumentException("--resistance needs a number from 0 to 100"),
+            )
             "--list-envs" -> opts = opts.copy(listEnvs = true)
             "--view" -> opts = opts.copy(view = value(a).takeIf { it != "rider" })
             "-h", "--help" -> opts = opts.copy(help = true)

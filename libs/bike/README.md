@@ -40,7 +40,9 @@ val pace: PaceSource = bike.orElse(buttonsPace)      // give this to the game in
 
 `pace.metersPerSecond` follows the bike while `bike.isLive`, and `buttonsPace` (any other `PaceSource`, such as the on-screen slower/faster buttons) the rest of the time. Show `bike.isLive` in the HUD so the rider can tell which one is driving. Both are cheap, lock-light reads meant for the render thread.
 
-The mapping is `metres per second = clamp(rpm x 0.042, 0, 6.0)`, so 60 rpm is about 2.5 m/s and 90 rpm about 3.8 m/s. It is smoothed with a 1 s time constant and eases to a stop if no sample arrives for 3 s. Change it with `BikePaceSource(BikeSensors(context), CadencePace(metersPerSecondPerRpm = ..., maxMetersPerSecond = ...))`.
+The same object carries the resistance knob as a 0 to 1 `ResistanceSource`: `bike.resistanceOrElse(fallback)` follows the bike while it is live and `fallback` otherwise, and reads 0 if the bike goes quiet for 3 s. Roadwork passes it to its environments, where Skylift Mesa uses it for height and difficulty ([docs/ENVIRONMENTS.md](../../docs/ENVIRONMENTS.md#resistance)). Resistance has not yet been checked on a real bike.
+
+The pace mapping is `metres per second = clamp(rpm x 0.042, 0, 6.0)`, so 60 rpm is about 2.5 m/s and 90 rpm about 3.8 m/s. It is smoothed with a 1 s time constant and eases to a stop if no sample arrives for 3 s. Change it with `BikePaceSource(BikeSensors(context), CadencePace(metersPerSecondPerRpm = ..., maxMetersPerSecond = ...))`.
 
 For the raw values, use `BikeSensors` directly: `start()`, `stop()`, `state`, `latest` (a `BikeReading`), `addListener(...)` and `diagnostics()`.
 

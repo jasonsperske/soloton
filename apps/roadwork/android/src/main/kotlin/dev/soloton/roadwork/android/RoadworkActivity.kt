@@ -14,6 +14,7 @@ import dev.soloton.music.MusicSettingsActivity
 import dev.soloton.platform.applyBikeScreen
 import dev.soloton.platform.reapplyImmersive
 import dev.soloton.roadwork.AdjustablePace
+import dev.soloton.roadwork.AdjustableResistance
 import dev.soloton.roadwork.Environments
 import dev.soloton.roadwork.RoadworkGame
 
@@ -47,6 +48,7 @@ class RoadworkActivity : AndroidApplication() {
         music = FolderMusicController(this).also { it.attachTo(this) }
         bike = BikePaceSource(applicationContext)
         val buttonsPace = AdjustablePace()
+        val keysResistance = AdjustableResistance()
         val actions = object : PlatformActions {
             // Called from the render thread; startActivity belongs on the UI thread.
             override fun openMusicSettings(playlist: PlaylistRef) = runOnUiThread {
@@ -63,6 +65,9 @@ class RoadworkActivity : AndroidApplication() {
             pace = bike.orElse(buttonsPace),
             manualPace = buttonsPace,
             manualPaceActive = { !bike.isLive },
+            // The bike's resistance knob; without a bike, the R and F keys of an attached keyboard.
+            resistance = bike.resistanceOrElse(keysResistance),
+            manualResistance = keysResistance,
             actions = actions,
             environment = environment,
             startOnPicker = requested == null,

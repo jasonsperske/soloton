@@ -3,6 +3,7 @@ package dev.soloton.bike
 
 import android.content.Context
 import dev.soloton.api.PaceSource
+import dev.soloton.api.ResistanceSource
 
 /**
  * The runner's pace from the bike's cadence: [BikeSensors] feeding a [CadencePace].
@@ -21,8 +22,14 @@ class BikePaceSource(
 ) : PaceSource {
     constructor(context: Context) : this(BikeSensors(context))
 
+    /** The resistance knob, from the same readings. */
+    val resistance = BikeResistance()
+
     private val feed = object : BikeSensors.Listener {
-        override fun onReading(reading: BikeReading) = pace.onReading(reading)
+        override fun onReading(reading: BikeReading) {
+            pace.onReading(reading)
+            resistance.onReading(reading)
+        }
     }
 
     init {
@@ -46,4 +53,8 @@ class BikePaceSource(
 
     /** A source that follows the bike while [isLive] and [fallback] the rest of the time. */
     fun orElse(fallback: PaceSource): BikeOrFallbackPace = BikeOrFallbackPace(this, { isLive }, fallback)
+
+    /** The bike's resistance while [isLive] and [fallback] the rest of the time. */
+    fun resistanceOrElse(fallback: ResistanceSource): BikeOrFallbackResistance =
+        BikeOrFallbackResistance(resistance, { isLive && resistance.isFresh }, fallback)
 }

@@ -29,7 +29,17 @@ class RideState(initialSpeed: Float) {
     var crankAngle: Float = 0f
         private set
 
-    fun step(dt: Float, targetSpeed: Float) {
+    /**
+     * How hard the bike is set, 0 to 1, eased over [RESISTANCE_EASE_SECONDS] so the knob's coarse
+     * updates do not jolt a scene that uses it. 0 when nothing reports a resistance.
+     */
+    var resistance: Float = 0f
+        private set
+
+    fun step(dt: Float, targetSpeed: Float, targetResistance: Float = 0f) {
+        val wanted = if (targetResistance.isNaN()) 0f else targetResistance.coerceIn(0f, 1f)
+        resistance += (wanted - resistance) * (1f - exp(-dt / RESISTANCE_EASE_SECONDS))
+        if (kotlin.math.abs(resistance - wanted) < 1e-4f) resistance = wanted
         val target = targetSpeed.coerceAtLeast(0f)
         val k = 1f - exp(-dt / SPEED_EASE_SECONDS)
         speed += (target - speed) * k
@@ -43,6 +53,7 @@ class RideState(initialSpeed: Float) {
 
     companion object {
         const val SPEED_EASE_SECONDS = 1.2f
+        const val RESISTANCE_EASE_SECONDS = 0.6f
         /** A 700c road wheel. */
         const val WHEEL_RADIUS = 0.34f
         /**
