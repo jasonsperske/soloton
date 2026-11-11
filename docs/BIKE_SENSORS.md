@@ -1,62 +1,123 @@
-# Bike sensors: can a sideloaded app read cadence? (WP6 spike)
+# Bike sensors: reading cadence, power and resistance from a sideloaded app
 
-**Verdict: a supported route exists, with caveats.** Two Peloton system services on the original Bike tablet hand cadence, power and resistance to any app that binds them. Neither needs root or a signature permission on the firmware that was tested. All the published evidence comes from newer original-Bike firmware (Android 10 and 11). **No source confirms this on Android 7.0**, so which service our tablet has, and whether it is guarded there, is unverified until the adb checks below are run.
+**Where this stands.** `libs/bike` implements both routes below. It has been tested only against stand-in services on an API 24 emulator. **Nothing here has been verified on a real bike, and nothing has been verified on Android 7.0 firmware by anyone:** every published observation comes from original-Bike tablets on Android 10 or 11. Which service the owner's tablet has, and whether it lets an ordinary app bind, is unknown until the steps at the end are run.
 
-## Routes
+| Claim | Evidence |
+|---|---|
+| The serial protocol between tablet and bike | PeloMon, captured on the cable of a real bike (2020) |
+| Route A names, codes, field order, units | Grupetto source; OpenRide ran it on a real original Bike, Android 11 |
+| Route B polled reads | Grupetto fork ran it once on a real bike (2026-10-18), stationary, after stopping Affernet |
+| Route B repeating commands | Grupetto's original 2022 reader; no published capture |
+| Our client decodes all of the above correctly | Our JVM tests, plus instrumented tests against our own stand-ins. Not a real bike |
+| Any of it on Android 7.0 | None |
 
-### A. Affernet `IV1Interface` (callback over Binder). Primary on current original-Bike firmware
-- Bind an Intent with action `com.onepeloton.affernetservice.IV1Interface` and package `com.onepeloton.affernetservice` (component `AffernetService`). [Grupetto v1new/Binder.kt](https://github.com/selalipop/grupetto/blob/main/app/src/main/java/com/spop/poverlay/sensor/v1new/Binder.kt)
-- Use raw `transact` with descriptor `com.onepeloton.affernetservice.IV1Interface`. Code 1 is `registerCallback(IV1Callback, String clientId)` and code 2 is unregister. The service pushes to our Binder with descriptor `...IV1Callback`, code 1 `onSensorDataChange`: `int hasData`, then `BikeData`, whose fields start `long rpm, long power (centiwatts), long, long, int currentResistance (0–100)`. [Grupetto CallbackSensor.kt](https://github.com/selalipop/grupetto/blob/main/app/src/main/java/com/spop/poverlay/sensor/v1new/CallbackSensor.kt), [doudar fork V1NewCombinedSensor.kt / BikeCoreData.kt](https://github.com/doudar/grupetto/tree/main/app/src/main/java/com/spop/poverlay/sensor)
-- Permissions: OpenRide reports `exported=true` with **no** `android:permission`. It verified this live on PLTN-RB1VQ, Android 11, at about 1 Hz while a rider pedalled (cadence 21–90 rpm). [OpenRide SENSOR_PROTOCOL.md](https://github.com/digitalducktape/OpenRide/blob/main/docs/SENSOR_PROTOCOL.md), [DEVICE.md](https://github.com/digitalducktape/OpenRide/blob/main/docs/DEVICE.md). Grupetto also declares `onepeloton.permission.ACCESS_SENSOR_SERVICE`, which costs nothing to add.
-- Bike vs Bike+: Bike+ (PLTN-TTR01) streams over `IBikeInterface` instead. There, `IV1Interface` binds but sends no frames (OpenRide). Tread uses a different interface. This route is for the original Bike only.
-- Stock app: not needed. The data comes from a separate system package, and Peloverlay reads it outside a workout. ([darknoon/peloverlay](https://github.com/darknoon/peloverlay))
-- History: [Grupetto PR #10](https://github.com/selalipop/grupetto/pull/10) (Sept 2025) added this route because "the old sensor service isn't there anymore on the latest update".
+## The protocol underneath: tablet to bike over serial
 
-### B. Legacy `com.peloton.service.SensorData` (Messenger). Likely on older firmware such as Android 7 (unverified)
-- Bind action `android.intent.action.peloton.SensorData` with category `com.peloton.sensor.category.BIKE`, package `com.peloton.service.SensorData`, component `com.peloton.sensor.SensorService`. The descriptor is `android.os.IMessenger`.
-- doudar fork, verified live on 2026-10-18: send message `what=12` with Bundle `command` set to a fixed hex packet and a `requestId`. Cadence is `F5,41,36,F6`, power is `F5,44,39,F6` (tenths of a watt) and resistance is `F5,49,3E,F6`. The reply has `what=14`, with `responseHexString` such as `F1 41 03 <ASCII digits, LSB first> <sum> F6`. [SensorDataProtocol.kt](https://github.com/doudar/grupetto/blob/main/app/src/main/java/com/spop/poverlay/sensor/v1legacy/SensorDataProtocol.kt), [SensorDataClient.kt](https://github.com/doudar/grupetto/blob/main/app/src/main/java/com/spop/poverlay/sensor/v1legacy/SensorDataClient.kt), [pedal-calibration.md](https://github.com/doudar/grupetto/blob/main/docs/pedal-calibration.md)
-- The original 2022 Grupetto used `what=1/2/3` (repeating rpm, power and resistance) and read the float in `data`. [v1/Sensor.kt](https://github.com/selalipop/grupetto/blob/main/app/src/main/java/com/spop/poverlay/sensor/v1/Sensor.kt). Unverified on current firmware.
-- Permissions: there is no service permission in SensorData 2.8.3016's manifest (doudar). Android 7 builds are unverified.
-- **Caveat:** Affernet and SensorData both open `/dev/ttyO0` with `TIOCEXCL`. While Affernet is running, SensorData fails with "could not open /dev/ttyO0". Use B only when Affernet is absent, and never force-stop Affernet.
+Documented by the [PeloMon project](https://github.com/ihaque/pelomon) ([write-up](https://ihaque.org/tag/pelomon.html)), which tapped the cable. The tablet is the master; it sends a 4-byte request and the bike's sensor board answers. 19200 baud, 8N1, on the tablet's `/dev/ttyO0`.
 
-### C. Dead ends for an app
-- **Direct serial port:** `/dev/ttyO0` at 19200 8N1 is system-owned and not openable without root (Grupetto README; doudar).
-- **Hardware taps:** [SmartSpin2k](https://github.com/doudar/SmartSpin2k) (GPL-2.0, ESP32 on a Y-splitter), DFC (closed hardware) and [PeloMon](https://github.com/ihaque/pelomon) sit on the sensor cable and output BLE. They are not tablet routes.
-- **[QZ](https://github.com/cagnulein/qdomyos-zwift) (GPL-3.0):** uses SmartSpin2k or BLE. No tablet-service use found (search not exhaustive).
-
-### Licences
-- Grupetto and the doudar fork have **no licence** (open issues [#7](https://github.com/selalipop/grupetto/issues/7) and [#13](https://github.com/selalipop/grupetto/issues/13)), so do not copy their code.
-- OpenRide is **Apache-2.0**. Its reconstructed AIDL may be copied with its LICENSE and NOTICE kept.
-- Peloverlay states public domain in its README.
-- OpenPelo is MIT.
-- Safest: write our own ~150 lines from the functional facts above (descriptors, transaction codes, parcel order, packet bytes) and credit the sources.
-
-## Recommended `libs/bike` outline
-
-1. `BikePaceSource(context, fallback: PaceSource) : PaceSource`. It reads a `@Volatile` value, so nothing is allocated per frame.
-2. Discovery with `PackageManager.queryIntentServices`: Affernet first, SensorData only if Affernet is not installed. If neither is found, return `fallback` immediately.
-3. Affernet: bind, then register with client id `"soloton"`. Decode only rpm, power and resistance (read the two unused longs to stay aligned). Unregister and unbind in `onStop`. Never call codes 3 and up (fake data, calibration).
-4. SensorData: poll the three fixed read packets one at a time, about 100 ms apart, with a 1.5 s timeout. Validate the frame and checksum. Send no other commands.
-5. State: Connected only after the first valid frame. If no frame arrives within 5 s of binding, or on error or disconnect, switch to `fallback` and retry binding every 30 s.
-6. Mapping: `mps = clamp(rpm * 0.042, 0, 6.0)`, so 60 rpm ≈ 2.5 m/s (a jog) and 90 rpm ≈ 3.8 m/s. Smooth with an exponential moving average (τ ≈ 1 s). If no frame arrives for 3 s, decay to 0. Keep the factor in settings. Power to speed via PeloMon's curve is an alternative.
-7. Manifest: no new permissions needed. Optionally add `onepeloton.permission.ACCESS_SENSOR_SERVICE`. `<queries>` is not needed on API 24.
-8. Tests: JVM tests decode synthetic parcels and packets. The bind is checked on the bike.
-
-## Confirm on the real bike (read-only)
-
-```sh
-adb shell getprop ro.product.model; adb shell getprop ro.build.version.release
-adb shell getprop ro.build.display.id; adb shell settings get global peloton_platform
-adb shell pm list packages -f | grep -i -E 'peloton|affernet|sensor'
-adb shell dumpsys package com.onepeloton.affernetservice   # Service Resolver Table, exported, permission
-adb shell dumpsys package com.peloton.service.SensorData
-adb shell pm list permissions -f | grep -i -A4 'onepeloton\|peloton'   # protectionLevel
-adb shell dumpsys activity services com.onepeloton.affernetservice    # who is bound (stock app?)
-adb shell dumpsys activity services com.peloton.service.SensorData
-adb shell ps | grep -i -E 'affernet|sensor|peloton'
-adb shell ls -l /dev/ttyO* /dev/ttyS*
-adb shell pm path com.onepeloton.affernetservice   # then adb pull <path> for offline manifest check
-adb logcat -d | grep -i -E 'affernet|SensorData|ttyO0|SerialHandler'
+```
+request    F5 <op> <sum> F6                  read a live value
+           F7 <i>  <sum> F6                  read entry i (00 to 1E) of the resistance table
+response   F1 <op> <n> <n ASCII digits, least significant first> <sum> F6
 ```
 
-Decide: which service exists; whether it is exported with no permission (or a non-signature one); which process owns the serial port; whether transaction codes match (needs the pulled APK or a test build).
+- `<sum>` is the low byte of the sum of all bytes before it. A response is `n + 5` bytes long.
+- The value is decimal, one ASCII digit per byte, **least significant digit first**: `31 33 30` is 031.
+- `41` cadence, 3 digits, rpm.
+- `44` power, 5 digits, **tenths of a watt**.
+- `4A` raw resistance, 4 digits: a sensor count, not a percentage. The tablet converts it with a 31-entry calibration table it reads from the bike at start-up (`F7 00` to `F7 1E`, 4 digits each). Entry i is the count at i x 100/30 percent; a reading is placed by linear interpolation between the two entries around it.
+- `49` resistance already normalised to 0 to 100, 3 digits. Not in PeloMon; found by the Grupetto fork ([pedal-calibration.md](https://github.com/doudar/grupetto/blob/main/docs/pedal-calibration.md)), which read `F1 49 03 31 33 30 D1 F6` (31) from a real bike. Whether older sensor boards answer `49` is unknown, so `libs/bike` falls back to `4A` plus the table.
+- The tablet polls about every 100 ms. Speed is not sent; the Peloton software computes it from power.
+
+An app cannot use this directly: `/dev/ttyO0` is owned by `system`, mode 0660, SELinux enforcing (Grupetto README; fork notes). The two services below own it on the app's behalf.
+
+## Route A: Affernet `IV1Interface` (callbacks over Binder)
+
+Primary on current original-Bike firmware.
+
+- **Bind:** an Intent with action `com.onepeloton.affernetservice.IV1Interface` and package `com.onepeloton.affernetservice`, flag `BIND_AUTO_CREATE`. The service class is `com.onepeloton.affernetservice.AffernetService` (OpenRide). Grupetto binds by action and package only: the `...AffernetService` string in its [v1new/Binder.kt](https://github.com/selalipop/grupetto/blob/main/app/src/main/java/com/spop/poverlay/sensor/v1new/Binder.kt) is passed to the Intent constructor as an action and then replaced, so it is not a component name. *(Correction: an earlier version of this page said Grupetto binds that component.)*
+- **Interface descriptor:** `com.onepeloton.affernetservice.IV1Interface`. Raw `transact`, no AIDL published.
+  - code 1 `registerCallback(IV1Callback, String clientId)`: interface token, strong binder, string; reply carries the usual exception header.
+  - code 2 `unregisterCallback(IV1Callback, String clientId)`: same arguments.
+  - code 3 `setFakeDataMode(boolean)`, code 4 `setCallbackReportRate(int)`, codes 5 to 15 calibration and similar (OpenRide). `libs/bike` sends only 1 and 2.
+- **Callback descriptor:** `com.onepeloton.affernetservice.IV1Callback`, called **one-way** (OpenRide, from the proxy bytecode).
+  - code 1 `onSensorDataChange(BikeData)`: `int hasData`, then if non-zero the `BikeData` parcelable.
+  - code 2 `onSensorError(long)`.
+  - code 3 `onCalibrationStatus(int, boolean, long)`.
+- **`BikeData` starts:** `long rpm`, `long power`, `long stepperMotorPosition`, `long loadCellReading`, `int currentResistance`, `int targetResistance`, then about fifty more fields (strings, a byte array, error codes). Source: [Grupetto BikeData.java](https://github.com/selalipop/grupetto/blob/main/app/src/main/java/com/spop/poverlay/sensor/BikeData.java), [fork BikeCoreData.kt](https://github.com/doudar/grupetto/blob/main/app/src/main/java/com/spop/poverlay/sensor/BikeCoreData.kt). `libs/bike` reads the first five and stops.
+- **Units:** rpm as is; power in **centiwatts** (Grupetto [V1PowerSensor.kt](https://github.com/selalipop/grupetto/blob/main/app/src/main/java/com/spop/poverlay/sensor/v1new/V1PowerSensor.kt) divides by 100; OpenRide's live capture agrees); resistance already 0 to 100.
+- **Rate:** about 1 Hz on the original Bike, including idle frames with nobody pedalling (OpenRide: 89 frames in 90 s). OpenRide asks for a rate with code 4; we do not.
+- **Permissions:** OpenRide reports the service `exported=true` with no `android:permission` on PLTN-RB1VQ, Android 11, build RQ.250113.A ([SENSOR_PROTOCOL.md](https://github.com/digitalducktape/OpenRide/blob/main/docs/SENSOR_PROTOCOL.md)). Grupetto declares `onepeloton.permission.ACCESS_SENSOR_SERVICE`; so do we, at no cost.
+- **Quirks:**
+  - Resistance "occasionally spikes for a single reading"; both Grupetto versions show the lowest of the last three ([PelotonBikeSensorInterfaceV1New.kt](https://github.com/selalipop/grupetto/blob/main/app/src/main/java/com/spop/poverlay/sensor/interfaces/PelotonBikeSensorInterfaceV1New.kt)). So do we.
+  - "At times the Peloton sensor service stops responding until the Bike is power cycled" (Grupetto [DeadSensorDetector.kt](https://github.com/selalipop/grupetto/blob/main/app/src/main/java/com/spop/poverlay/sensor/DeadSensorDetector.kt), which warns after 10 s of silence). We report `NoData` after 3 s and rebind after 10 s; a rebind may not cure it.
+  - On Affernet 2.4.490, when the last client of a given bind Intent unbinds, the service's `onUnbind` stops its communication with the bike, even if clients bound with a different Intent remain (fork, [SENSOR_CONNECTIONS.md](https://github.com/doudar/grupetto/blob/main/docs/SENSOR_CONNECTIONS.md)). Our `stop()` unbinds. If Peloton's own app is running at the same time and loses its data when ours stops, this is why.
+  - Bike+ (PLTN-TTR01) binds `IV1Interface` but never sends a frame; it uses `IBikeInterface` (OpenRide). Tread differs again. This library is for the original Bike.
+
+## Route B: legacy `com.peloton.service.SensorData` (Messenger)
+
+Possibly what Android 7 firmware has. Unverified there.
+
+- **Bind:** action `android.intent.action.peloton.SensorData`, package `com.peloton.service.SensorData`. The fork adds category `com.peloton.sensor.category.BIKE` and found the class `com.peloton.sensor.SensorService` (version 2.8.3016); the service also advertises `FAKE_DATA` and `AURORA` categories, which select other modes and must not be sent. Grupetto's original reader ([v1/Binder.kt](https://github.com/selalipop/grupetto/blob/main/app/src/main/java/com/spop/poverlay/sensor/v1/Binder.kt)) sends no category. `libs/bike` tries with the bike category and, if nothing resolves, without.
+- **Interface descriptor:** `android.os.IMessenger`.
+- **Dialect 1, polled raw reads** (fork, [SensorDataClient.kt](https://github.com/doudar/grupetto/blob/main/app/src/main/java/com/spop/poverlay/sensor/v1legacy/SensorDataClient.kt)): send `what=12` with a Bundle of `command` (the request packet as comma-separated hex, for example `F5,41,36,F6`) and `requestId`, and a `replyTo`. The answer is `what=14` with the same `requestId` and `responseHexString`: the board's raw response as hex bytes, or the literal `TIME_OUT`. The client validates and decodes the packet itself, as in the serial section above.
+- **Dialect 2, repeating commands** (Grupetto's original reader, [v1/Sensor.kt](https://github.com/selalipop/grupetto/blob/main/app/src/main/java/com/spop/poverlay/sensor/v1/Sensor.kt)): send `what=1` (cadence), `2` (power) or `3` (resistance) once with a `requestId` and a `replyTo`; the service keeps sending messages whose Bundle has `data` (float), `time` (epoch long) and `responseHexString`. A reply with negative `what` means the command was refused. No "stop" message is known. *(Addition: the earlier version of this page gave the message numbers but not the reply layout.)*
+- **Units, and one open question:** the raw packet's power is tenths of a watt (PeloMon; fork). For the pre-parsed `data` float, Grupetto's original reader divides power by 100, while the fork's notes say `data` "already has this scaling" of one decimal place. These disagree and no capture has been published. `libs/bike` therefore decodes the raw packet whenever it is there, uses `data` (with Grupetto's divide-by-100) only when it is not, and logs the first raw reply of each kind so a real bike can settle it. Pace uses cadence only, so the game does not depend on the answer.
+- **Permissions:** the fork found no service permission in SensorData 2.8.3016's manifest. Android 7 builds are unverified.
+- **The serial port is exclusive.** Affernet opens `/dev/ttyO0` with `TIOCEXCL`. While Affernet runs, SensorData logs "could not open /dev/ttyO0" and returns nothing; the fork's one successful read needed Affernet stopped first. We never stop Affernet. On a tablet that has both, route B will simply stay silent.
+
+## What `libs/bike` does
+
+See [libs/bike/README.md](../libs/bike/README.md) for the API. In short: try A, then B polled, then B repeating, each for 5 s, skipping any whose package is absent; report `Unavailable` with reasons if none delivers; retry with a growing pause unless nothing is installed at all.
+
+One difference from the Grupetto fork is deliberate. The fork never tries route B when an Affernet service is installed, even a silent one, so as not to compete for the serial port. We do try it after 5 s of silence, as the owner asked. Trying is harmless when Affernet holds the port (B gets nothing). The risk is a tablet where Affernet is installed but not holding the port: SensorData would open it, and Affernet could not until we unbind. If the report from the bike shows both packages, we should revisit this.
+
+## Dead ends for an app
+
+- **The serial port itself:** not openable without root (above).
+- **Hardware taps:** [PeloMon](https://github.com/ihaque/pelomon), [SmartSpin2k](https://github.com/doudar/SmartSpin2k) and DFC sit on the sensor cable and rebroadcast over Bluetooth. They are not tablet routes.
+- **[QZ](https://github.com/cagnulein/qdomyos-zwift):** uses SmartSpin2k or Bluetooth. No use of the tablet services was found in the earlier survey (not exhaustive, not rechecked).
+
+## Licences
+
+Soloton is GPL-3.0-only.
+
+- **Grupetto** and the **doudar fork**: no licence (open issues [#7](https://github.com/selalipop/grupetto/issues/7) and [#13](https://github.com/selalipop/grupetto/issues/13)). No code, comments or structure were copied; only protocol facts.
+- **PeloMon**: the repository's `LICENSE` is GPL-3.0 and the Python scripts in `peloton_decoding/` say GPL v3 in their headers. **But the firmware sources in `pelomon/`, including `peloton.h` (the packet decoder) and `resistance_lut.h` (the table lookup), say "Licensed under the CC-BY-NC 4.0 license" in their own headers.** CC BY-NC is not compatible with the GPL, so nothing was ported from those files. Our decoder and interpolation are written from the documented behaviour.
+- **OpenRide**: Apache-2.0, compatible with GPL-3.0. Nothing was copied.
+
+## Verify on the owner's bike
+
+Nothing below has been run. Steps 1 to 3 need an app that includes `libs/bike` installed on the bike (for Roadwork, application id `dev.soloton.roadwork`).
+
+1. Open the diagnostics screen:
+   ```sh
+   adb shell am start -n dev.soloton.roadwork/dev.soloton.bike.BikeDiagnosticsActivity
+   ```
+2. Wait 20 seconds, then: pedal slowly and quickly (cadence should follow); turn the knob end to end (resistance should run from near 0 to near 100); pedal hard (power should rise); stop (cadence and power 0, state still Connected).
+3. Tap **Copy report** and pull the file:
+   ```sh
+   adb pull /sdcard/Android/data/dev.soloton.roadwork/files/bike-diagnostics.txt
+   ```
+4. Run these read-only checks and save the output with the report:
+   ```sh
+   adb shell getprop ro.product.model; adb shell getprop ro.build.version.release
+   adb shell getprop ro.build.display.id; adb shell settings get global peloton_platform
+   adb shell pm list packages -f | grep -i -E 'peloton|affernet|sensor'
+   adb shell dumpsys package com.onepeloton.affernetservice   # service table, exported, permission, version
+   adb shell dumpsys package com.peloton.service.SensorData
+   adb shell pm list permissions -f | grep -i -A4 'onepeloton\|peloton'   # protectionLevel
+   adb shell dumpsys activity services com.onepeloton.affernetservice    # who else is bound
+   adb shell dumpsys activity services com.peloton.service.SensorData
+   adb shell ps | grep -i -E 'affernet|sensor|peloton'
+   adb shell ls -l /dev/ttyO* /dev/ttyS*
+   adb logcat -d | grep -i -E 'affernet|SensorData|ttyO0|SerialHandler'
+   ```
+
+What the report settles:
+
+- Which packages exist on Android 7.0, their versions, and whether the services are exported and unguarded.
+- Which route connects, and how many samples a second it gives.
+- Whether cadence, power and resistance are in the units assumed (the event log holds the first raw reply of each kind on route B).
+- On route B: whether the polled dialect is understood, whether the board answers `49`, and what the `data` float's power scale is.
+- If nothing connects: the reason each route gave, which says what to change.
