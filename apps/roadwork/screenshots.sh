@@ -58,6 +58,14 @@ for shot in "${shots[@]}"; do
   [[ -s "$out/$name.png" ]] || { echo "missing $out/$name.png" >&2; exit 1; }
 done
 
+# Skylift Mesa: on the ground with no resistance, then lifted by a middling and a high resistance.
+for shot in "skylift-mesa-ground:0" "skylift-mesa-climbing:45" "skylift-mesa-high:85"; do
+  name="${shot%%:*}"
+  resistance="${shot##*:}"
+  run "$launcher" --env skylift-mesa --resistance "$resistance" --screenshot "$out/$name.png" --at 30
+  [[ -s "$out/$name.png" ]] || { echo "missing $out/$name.png" >&2; exit 1; }
+done
+
 # The environment picker, the screen the app opens on.
 run "$launcher" --picker --screenshot "$out/picker.png"
 [[ -s "$out/picker.png" ]] || { echo "missing $out/picker.png" >&2; exit 1; }

@@ -1,12 +1,14 @@
 package dev.soloton.roadwork
 
 import dev.soloton.roadwork.env.riverfront.Riverfront
+import dev.soloton.roadwork.env.skylift.Skylift
 
 /** Every environment the app has. Adding one is a new package plus one line in [all]. */
 object Environments {
     /** In the order a picker would show them. The first is the default. */
     val all: List<Environment> = listOf(
         Riverfront.environment,
+        Skylift.environment,
     )
 
     val default: Environment get() = all.first()

@@ -33,7 +33,25 @@ class DesktopLauncherTest {
     fun listsEveryEnvironmentWithItsMusicFolder() {
         val lines = describeEnvironments(Environments.all, Environments.default).trimEnd().lines()
         assertEquals(Environments.all.size, lines.size)
-        assertEquals("riverfront  Riverfront Roadwork  music: Mike Tyson's Punch-Out!!  [default]", lines.first())
+        // Columns are padded to the longest id and title.
+        assertEquals(
+            listOf("riverfront", "Riverfront Roadwork", "music: Mike Tyson's Punch-Out!!", "[default]"),
+            lines.first().split(Regex(" {2,}")),
+        )
+        for ((line, e) in lines.zip(Environments.all)) {
+            assertTrue(line.startsWith(e.id) && e.title in line && "music: ${e.musicFolder}" in line, line)
+        }
+    }
+
+    @Test
+    fun resistanceIsAPercentageFromZeroToAHundred() {
+        assertEquals(0f, parseArgs(emptyArray()).resistancePercent)
+        assertEquals(70f, parseArgs(arrayOf("--resistance", "70")).resistancePercent)
+        assertEquals(12.5f, parseArgs(arrayOf("--env", "skylift-mesa", "--resistance", "12.5")).resistancePercent)
+        for (bad in listOf("-1", "101", "high")) {
+            assertFailsWith<IllegalArgumentException> { parseArgs(arrayOf("--resistance", bad)) }
+        }
+        assertFailsWith<IllegalArgumentException> { parseArgs(arrayOf("--resistance")) }
     }
 
     @Test

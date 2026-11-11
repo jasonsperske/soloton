@@ -9,6 +9,7 @@ import dev.soloton.api.MusicState
 import dev.soloton.api.NoPlatformActions
 import dev.soloton.api.PaceSource
 import dev.soloton.api.PlatformActions
+import dev.soloton.api.ResistanceSource
 import dev.soloton.api.SilentMusicController
 
 /**
@@ -39,6 +40,9 @@ import dev.soloton.api.SilentMusicController
  *   that falls back to the buttons.
  * @param manualPaceActive whether [manualPace] is what currently drives the ride. Polled every frame;
  *   the buttons are hidden while it is false (the bike's own cadence is setting the pace).
+ * @param resistance how hard the bike is set, passed to scenes through [RideState.resistance]
+ * @param manualResistance the resistance the R (raise) and F (lower) keys adjust, if any. Defaults to
+ *   [resistance] when that is an [AdjustableResistance]; pass it separately when [resistance] wraps it.
  */
 class RoadworkGame(
     private val music: MusicController = SilentMusicController(),
@@ -50,6 +54,8 @@ class RoadworkGame(
     private val onEnvironmentChanged: (Environment) -> Unit = {},
     private val manualPace: AdjustablePace? = pace as? AdjustablePace,
     private val manualPaceActive: () -> Boolean = { true },
+    private val resistance: ResistanceSource = AdjustableResistance(),
+    private val manualResistance: AdjustableResistance? = resistance as? AdjustableResistance,
 ) : ApplicationAdapter() {
     private val stage = object : AppFlow.Stage {
         override fun pickerShown(highlight: Environment) {
@@ -112,6 +118,8 @@ class RoadworkGame(
         override fun onTogglePause() { setPaused(!paused) }
         override fun onSettings() { actions.openMusicSettings(environment.playlist) }
         override fun onEnvironments() { showPicker() }
+        override fun onResistanceUp() { manualResistance?.raise() }
+        override fun onResistanceDown() { manualResistance?.lower() }
     }
 
     private val pickerListener = object : Picker.Listener {
@@ -230,7 +238,7 @@ class RoadworkGame(
     }
 
     private fun update(session: RideSession, dt: Float) {
-        session.ride.step(dt, pace.metersPerSecond)
+        session.ride.step(dt, pace.metersPerSecond, resistance.fraction)
         session.host.step(dt)
     }
 

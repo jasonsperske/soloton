@@ -52,6 +52,10 @@ internal class Hud(private val listener: Listener) : InputAdapter() {
 
         /** The pause overlay's "Environments" button, or back: leave the ride for the picker. */
         fun onEnvironments()
+
+        /** The R and F keys: raise or lower a hand-set resistance (there is no bike to read it from). */
+        fun onResistanceUp() {}
+        fun onResistanceDown() {}
     }
 
     private val layout = HudLayout()
@@ -435,6 +439,14 @@ internal class Hud(private val listener: Listener) : InputAdapter() {
             // Android's back button (caught by the game) and Escape leave the ride from any state.
             Input.Keys.BACK, Input.Keys.ESCAPE, Input.Keys.E -> {
                 listener.onEnvironments()
+                return true
+            }
+            Input.Keys.R, Input.Keys.PAGE_UP -> {
+                listener.onResistanceUp()
+                return true
+            }
+            Input.Keys.F, Input.Keys.PAGE_DOWN -> {
+                listener.onResistanceDown()
                 return true
             }
             else -> return false
