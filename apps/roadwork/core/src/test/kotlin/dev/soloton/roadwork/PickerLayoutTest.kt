@@ -86,6 +86,27 @@ class PickerLayoutTest {
     }
 
     @Test
+    fun theExitButtonSitsAtTheTopRightClearOfTheCardsAndIsBigEnoughToTouch() {
+        for (n in 1..PickerLayout.MAX_CARDS) {
+            for ((w, h) in listOf(1920 to 1080, 1280 to 720, 1440 to 1080, 2560 to 1080, 1920 to 1200)) {
+                val l = layout(n, w, h)
+                val where = "$n cards at ${w}x$h: exit ${l.exit}"
+                assertTrue(inside(l.header, l.exit), where)
+                assertTrue(l.exit.width >= PickerLayout.MIN_TOUCH && l.exit.height >= PickerLayout.MIN_TOUCH, where)
+                // Right end of the heading strip, a margin in from the screen's corner.
+                assertEquals(l.width - PickerLayout.MARGIN, l.exit.x + l.exit.width, 0.01f, where)
+                assertEquals(PickerLayout.HEIGHT - PickerLayout.MARGIN, l.exit.y + l.exit.height, 0.01f, where)
+                // The heading keeps at least half the strip.
+                assertTrue(l.exit.x - l.header.x >= l.header.width / 2f, where)
+                for (c in l.cards) {
+                    assertFalse(overlap(l.exit, c.bounds), where)
+                    assertTrue(l.exit.y - (c.bounds.y + c.bounds.height) >= PickerLayout.GAP - 0.01f, "$where is too close to a card")
+                }
+            }
+        }
+    }
+
+    @Test
     fun upToFourSitInOneRowAndFiveToEightInTwo() {
         for (n in 1..PickerLayout.MAX_CARDS) {
             val l = layout(n)

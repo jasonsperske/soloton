@@ -16,10 +16,10 @@ Environments are listed in `Environments.all` (`apps/roadwork/core/src/main/kotl
 
 ## The picker
 
-The app opens on a picker ([screenshot](../apps/roadwork/docs/picker.png)): one card per environment, in registry order, with a preview of its scene, its title, a line about its music ("14 of 20 songs from 1 folder", or an amber line when nothing would play), a **Ride** button and a **Music** button that opens that environment's music settings. The environment ridden last is outlined. No music plays on the picker.
+The app opens on a picker ([screenshot](../apps/roadwork/docs/picker.png)): one card per environment, in registry order, with a preview of its scene, its title, a line about its music ("14 of 20 songs from 1 folder", or an amber line when nothing would play), a **Ride** button and a **Music** button that opens that environment's music settings. The environment ridden last is outlined. An **Exit** button at the top right closes the app. No music plays on the picker.
 
 - **Ride** starts a ride from zero in that environment: its playlist is selected, its scene built, music started.
-- During a ride, pause and tap **Environments**, or press back (Escape on desktop), to end the ride and return to the picker: music stops and the scene is disposed. Back on the picker exits the app.
+- During a ride, pause and tap **Environments**, or press back (Escape on desktop), to end the ride and return to the picker: music stops and the scene is disposed. On the picker, back or the **Exit** button exits the app.
 - The preview is one frame of the scene, 30 simulated seconds into a ride at the default pace, drawn into a framebuffer when the picker opens (no HUD, no handlebars) and freed when a ride starts. It comes from the same `EnvironmentScene` as the ride, so a new environment gets its preview for free.
 - The layout (`PickerLayout`) holds one to eight cards: up to four in one row, five to eight in two rows. `PickerLayoutTest` checks every count for overlaps and minimum sizes.
 

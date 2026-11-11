@@ -9,7 +9,8 @@ import kotlin.math.min
  * tall, as wide as the screen's aspect ratio makes it (1920 at 16:9), origin at the bottom left.
  * Pure maths, so tests can check sizes and overlaps for any number of environments.
  *
- * One to four environments sit in a single row; five to eight in two rows. A card stacks a
+ * A heading strip runs across the top, with the Exit button at its right end. Below it, one to
+ * four environments sit in a single row; five to eight in two rows. A card stacks a
  * preview image, the title, the music summary and two buttons:
  *
  * ```
@@ -38,8 +39,11 @@ class PickerLayout {
     var width = 1920f
         private set
 
-    /** The strip across the top holding the screen's heading. */
+    /** The strip across the top holding the screen's heading and, at its right end, [exit]. */
     val header = Rectangle()
+
+    /** The Exit button, which closes the app. */
+    val exit = Rectangle()
 
     var cards: List<Card> = emptyList()
         private set
@@ -63,6 +67,7 @@ class PickerLayout {
         val buttonH = if (compact) BUTTON_HEIGHT_COMPACT else BUTTON_HEIGHT
 
         header.set(MARGIN, HEIGHT - MARGIN - HEADER_HEIGHT, width - 2 * MARGIN, HEADER_HEIGHT)
+        exit.set(header.x + header.width - EXIT_WIDTH, header.y, EXIT_WIDTH, HEADER_HEIGHT)
         val areaW = width - 2 * MARGIN
         val areaH = header.y - GAP - MARGIN
         val cardW = min((areaW - (columns - 1) * GAP) / columns, MAX_CARD_WIDTH)
@@ -97,7 +102,9 @@ class PickerLayout {
         const val MAX_CARDS = 8
         const val MARGIN = 36f
         const val GAP = 24f
-        const val HEADER_HEIGHT = 84f
+        /** Tall enough for the Exit button to be a full touch target. */
+        const val HEADER_HEIGHT = 112f
+        const val EXIT_WIDTH = 220f
         const val MAX_CARD_WIDTH = 880f
         const val BUTTON_HEIGHT = 120f
         const val BUTTON_HEIGHT_COMPACT = 112f

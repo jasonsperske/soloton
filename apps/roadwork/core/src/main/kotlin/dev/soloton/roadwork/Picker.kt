@@ -28,6 +28,8 @@ import dev.soloton.api.PlaylistSummary
  * once into a framebuffer when the picker is shown (no HUD, no handlebars) and kept until it is
  * hidden. [renderPreviews] must be called outside any other framebuffer.
  *
+ * An Exit button at the top right closes the app.
+ *
  * Keys: left/right move the outline, Enter or space rides, M opens music settings, Escape or
  * Android's back button exits.
  */
@@ -61,6 +63,7 @@ internal class Picker(
     private val headerLayout = GlyphLayout()
     private val rideLayout = GlyphLayout()
     private val musicLayout = GlyphLayout()
+    private val exitLayout = GlyphLayout()
     private val titleLayouts = Array(environments.size) { GlyphLayout() }
     private val summaryLayouts = Array(environments.size) { GlyphLayout() }
     private val shownSummaries = arrayOfNulls<PlaylistSummary>(environments.size)
@@ -83,6 +86,7 @@ internal class Picker(
         layoutText(headerLayout, "Choose an environment", SCALE_HEADER, Color.WHITE)
         layoutText(rideLayout, "Ride", SCALE_BUTTON, Color.WHITE)
         layoutText(musicLayout, "Music", SCALE_BUTTON, Color.WHITE)
+        layoutText(exitLayout, "Exit", SCALE_BUTTON, Color.WHITE)
         val titleScale = if (layout.compact) SCALE_TITLE_COMPACT else SCALE_TITLE
         for (i in environments.indices) {
             layoutText(titleLayouts[i], environments[i].title, titleScale, Color.WHITE, layout.cards[i].title.width)
@@ -165,6 +169,8 @@ internal class Picker(
         camera.update()
         shapes.projectionMatrix = camera.combined
         shapes.begin(ShapeRenderer.ShapeType.Filled)
+        shapes.color = BUTTON
+        roundRect(layout.exit.x, layout.exit.y, layout.exit.width, layout.exit.height, 20f)
         for (i in environments.indices) {
             val c = layout.cards[i]
             if (i == highlight) {
@@ -205,6 +211,7 @@ internal class Picker(
         batch.begin()
         val h = layout.header
         drawText(headerLayout, SCALE_HEADER, h.x, h.y + (h.height + headerLayout.height) / 2f)
+        drawCentred(exitLayout, SCALE_BUTTON, layout.exit)
         val titleScale = if (layout.compact) SCALE_TITLE_COMPACT else SCALE_TITLE
         for (i in environments.indices) {
             val c = layout.cards[i]
@@ -263,6 +270,10 @@ internal class Picker(
     override fun touchDown(screenX: Int, screenY: Int, pointer: Int, button: Int): Boolean {
         val x = screenX * layout.width / Gdx.graphics.width
         val y = PickerLayout.HEIGHT - screenY * PickerLayout.HEIGHT / Gdx.graphics.height
+        if (layout.exit.contains(x, y)) {
+            listener.onExit()
+            return true
+        }
         for (i in environments.indices) {
             val c = layout.cards[i]
             when {
