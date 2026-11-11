@@ -6,6 +6,10 @@
 # Run from the repo root. Needs JDK 17+ and xvfb-run (with Mesa for software GL) when there
 # is no display. Each shot advances simulated time with a fixed 1/60 s step, so output is
 # deterministic for a given build. Exits non-zero if any shot fails.
+#
+# The shots use the built-in demo music names. SOLOTON_MUSIC_DIR (see .env.example) is ignored
+# here on purpose, so every machine produces the same images and nobody's own library shows up
+# in a committed screenshot.
 set -euo pipefail
 
 if [[ $# -ne 1 || "$1" != /* ]]; then
@@ -41,6 +45,9 @@ run() {
   fi
 }
 
+# Never the developer's own music folder: these images are committed.
+unset SOLOTON_MUSIC_DIR SOLOTON_MUSIC_DEVICE_DIR
+
 # Software GL is fine (and the only option on CI runners).
 export LIBGL_ALWAYS_SOFTWARE="${LIBGL_ALWAYS_SOFTWARE:-1}"
 
@@ -50,5 +57,9 @@ for shot in "${shots[@]}"; do
   run "$launcher" --screenshot "$out/$name.png" --at "$at"
   [[ -s "$out/$name.png" ]] || { echo "missing $out/$name.png" >&2; exit 1; }
 done
+
+# The environment picker, the screen the app opens on.
+run "$launcher" --picker --screenshot "$out/picker.png"
+[[ -s "$out/picker.png" ]] || { echo "missing $out/picker.png" >&2; exit 1; }
 
 echo "screenshots written to $out"

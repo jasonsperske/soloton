@@ -7,11 +7,12 @@ import kotlin.random.Random
  * the last item of the previous one (when there are at least two items), so no track plays twice in a row.
  * Not thread-safe: confine to one thread.
  */
-class ShuffleBag<T>(items: List<T>, private val random: Random = Random.Default) {
+class ShuffleBag<T>(items: List<T>, private val random: Random = Random.Default, justPlayed: T? = null) {
     private val items: List<T> = items.toList()
     private val order = ArrayList<T>(items.size)
     private var index = 0
-    private var last: T? = null
+    /** [justPlayed] is not handed out first, so replacing the bag mid-track does not repeat the track. */
+    private var last: T? = justPlayed
 
     init {
         require(this.items.isNotEmpty()) { "ShuffleBag needs at least one item" }

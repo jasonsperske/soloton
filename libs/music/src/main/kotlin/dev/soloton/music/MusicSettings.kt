@@ -10,15 +10,21 @@ import java.io.File
  * listens for [folder] changes, so writing it here (as [MusicSettingsActivity] does) switches the music.
  */
 class MusicSettings(context: Context) {
-    internal val prefs: SharedPreferences =
-        context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    private val appContext: Context = context.applicationContext
+    internal val prefs: SharedPreferences = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    /** Absolute path of the music folder. Defaults to [defaultFolder]. */
+    internal val selectionPrefs: SharedPreferences
+        get() = appContext.getSharedPreferences(SELECTIONS_PREFS_NAME, Context.MODE_PRIVATE)
+
+    /** Absolute path of the music root. Defaults to [defaultFolder]. */
     var folder: String
         get() = prefs.getString(KEY_FOLDER, null)?.takeIf { it.isNotBlank() } ?: defaultFolder()
         set(value) {
             prefs.edit().putString(KEY_FOLDER, value).apply()
         }
+
+    /** Each playlist's chosen folders and songs. A running [FolderMusicController] follows changes. */
+    val selections: SelectionStore = SelectionStore(PrefsBacking(selectionPrefs))
 
     /** Whether the storage permission has been requested once already (first-launch request). */
     var permissionAsked: Boolean
@@ -27,8 +33,18 @@ class MusicSettings(context: Context) {
             prefs.edit().putBoolean(KEY_PERMISSION_ASKED, value).apply()
         }
 
+    /** One preference per playlist id, holding [SelectionCodec] text. */
+    private class PrefsBacking(private val prefs: SharedPreferences) : SelectionBacking {
+        override fun read(id: String): String? = prefs.getString(id, null)
+        override fun write(id: String, value: String?) {
+            prefs.edit().apply { if (value == null) remove(id) else putString(id, value) }.apply()
+        }
+    }
+
     companion object {
         const val PREFS_NAME = "dev.soloton.music"
+        /** Separate from [PREFS_NAME] so playlist ids cannot collide with setting names. */
+        const val SELECTIONS_PREFS_NAME = "dev.soloton.music.selections"
         const val KEY_FOLDER = "folder"
         const val KEY_PERMISSION_ASKED = "permission_asked"
 

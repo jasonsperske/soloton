@@ -8,7 +8,12 @@ import com.badlogic.gdx.math.Rectangle
  * tests can check other overlays against it.
  */
 class HudLayout {
-    enum class Button { SLOWER, FASTER, SKIP, PAUSE, SETTINGS }
+    enum class Button {
+        SLOWER, FASTER, SKIP, PAUSE, SETTINGS,
+
+        /** Back to the environment picker. Part of the pause overlay: only there while paused. */
+        ENVIRONMENTS,
+    }
 
     var width = 1920f
         private set
@@ -20,8 +25,9 @@ class HudLayout {
 
     fun rect(b: Button): Rectangle = buttons[b.ordinal]
 
-    /** All panels and buttons, for overlap checks. */
-    fun all(): List<Rectangle> = listOf(statsPanel, pacePanel, musicPanel) + buttons
+    /** The panels and buttons that are always on screen (not the pause overlay's), for overlap checks. */
+    fun all(): List<Rectangle> =
+        listOf(statsPanel, pacePanel, musicPanel) + Button.entries.filter { it != Button.ENVIRONMENTS }.map { rect(it) }
 
     fun layout(screenWidth: Int, screenHeight: Int) {
         if (screenWidth <= 0 || screenHeight <= 0) return
@@ -39,6 +45,8 @@ class HudLayout {
         val musicW = (width - pacePanel.width - 3 * m - 40f).coerceAtMost(820f)
         musicPanel.set(width - m - musicW, m, musicW, panelH)
         rect(Button.SKIP).set(musicPanel.x + musicPanel.width - pad - b, m + pad, b, b)
+        // Under the PAUSED banner and its two lines of small text.
+        rect(Button.ENVIRONMENTS).set((width - OVERLAY_BUTTON_WIDTH) / 2f, HEIGHT / 2f - 250f, OVERLAY_BUTTON_WIDTH, b)
     }
 
     companion object {
@@ -47,5 +55,6 @@ class HudLayout {
         const val BUTTON = 120f
         const val GAP = 24f
         const val PAD = 16f
+        const val OVERLAY_BUTTON_WIDTH = 440f
     }
 }

@@ -11,8 +11,8 @@ import java.io.File
 import java.util.zip.Deflater
 
 /**
- * Wraps the game for screenshot mode: advances simulated time to [atSeconds] in fixed steps,
- * draws one frame into an offscreen [width]x[height] framebuffer (independent of window and
+ * Wraps the game for screenshot mode: advances simulated time to [atSeconds] in fixed steps
+ * (a ride; the picker has no clock), draws one frame into an offscreen [width]x[height] framebuffer (independent of window and
  * screen size), writes it as PNG and exits. Any error is kept in [failure].
  */
 class ScreenshotRunner(

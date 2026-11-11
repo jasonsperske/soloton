@@ -17,7 +17,10 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import dev.soloton.api.MusicController
 import dev.soloton.api.MusicState
+import dev.soloton.api.PlaylistRef
+import dev.soloton.api.PlaylistSummary
 import java.io.File
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.RejectedExecutionException
@@ -41,8 +44,11 @@ import kotlin.random.Random
  * manual wiring call [onHostStart], [onHostStop] and [release] instead.
  *
  * Audio focus (loss, transient loss, ducking, regain) and headphone unplugging are handled by ExoPlayer.
- * The folder comes from [MusicSettings]; changing it there (for example in [MusicSettingsActivity]) or via
- * [setFolder] rescans and restarts playback.
+ * The music root comes from [MusicSettings]; changing it there (for example in [MusicSettingsActivity]) or
+ * via [setFolder] rescans and restarts playback. [usePlaylist] narrows playback to the folders and songs
+ * saved for a playlist ([MusicSettings.selections]); folders inside the root are found again under a new
+ * root, and a change to the selection while playing takes effect at once, without restarting a track that
+ * is still selected.
  */
 class FolderMusicController @JvmOverloads constructor(
     context: Context,
@@ -63,6 +69,8 @@ class FolderMusicController @JvmOverloads constructor(
     private var scanGeneration = 0
     private var hostStopped = false
     private var resumeOnHostStart = false
+    private var activePlaylist: PlaylistRef? = null
+    private var permissionSeen = MusicPermission.isGranted(app)
 
     @Volatile
     override var state: MusicState = MusicState.Idle
@@ -78,17 +86,46 @@ class FolderMusicController @JvmOverloads constructor(
     internal var readyCount: Int = 0
         private set
 
-    /** The folder currently in use (from [MusicSettings] until [start] or [setFolder]). */
+    /** The music root currently in use (from [MusicSettings] until [start] or [setFolder]). */
+    @Volatile
+    var root: String = settings.folder
+        private set
+
+    /** The playlist whose selection plays, or null when the whole root plays. */
+    @Volatile
+    var playlist: PlaylistRef? = null
+        private set
+
+    /** The folder problems are reported against: [root], or the playlist's (first) folder. */
     @Volatile
     var folder: String = settings.folder
         private set
 
-    // SharedPreferences holds listeners weakly, so keep a strong reference.
+    // Summaries for menus, worked out on the background thread. Stale entries stay readable until replaced.
+    private val summaries = ConcurrentHashMap<String, PlaylistSummary>()
+    private val staleSummaries: MutableSet<String> = ConcurrentHashMap.newKeySet()
+    private val pendingSummaries: MutableSet<String> = ConcurrentHashMap.newKeySet()
+    @Volatile
+    private var allSummariesStaleAt = 0L
+    private val summaryComputedAt = ConcurrentHashMap<String, Long>()
+
+    // SharedPreferences holds listeners weakly, so keep strong references.
     private val folderListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         if (key == MusicSettings.KEY_FOLDER) {
-            val newFolder = settings.folder
-            post { if (started && newFolder != session.folder) rescan(newFolder) }
+            invalidateSummaries()
+            val newRoot = settings.folder
+            post { if (started && newRoot != session.root) rescan(newRoot) }
         }
+    }
+    private val selectionListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (key != null) staleSummaries += key else invalidateSummaries()
+        post { if (started && (key == null || key == playlist?.id)) reloadSelection() }
+    }
+    private val selectionPrefs = settings.selectionPrefs
+
+    init {
+        settings.prefs.registerOnSharedPreferenceChangeListener(folderListener)
+        selectionPrefs.registerOnSharedPreferenceChangeListener(selectionListener)
     }
 
     private val playerListener = object : Player.Listener {
@@ -105,7 +142,7 @@ class FolderMusicController @JvmOverloads constructor(
 
         override fun onPlayerError(error: PlaybackException) = guarded {
             Log.w(TAG, "Skipping ${session.currentFile}: ${error.errorCodeName}", error)
-            play(session.trackFailed())
+            currentFileFailed()
         }
 
         override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) = guarded {
@@ -124,11 +161,57 @@ class FolderMusicController @JvmOverloads constructor(
     override fun start() = post {
         if (!started) {
             started = true
-            settings.prefs.registerOnSharedPreferenceChangeListener(folderListener)
             rescan(settings.folder)
         } else if (session.problem != null) {
-            rescan(session.folder)
+            rescan(session.root)
         }
+    }
+
+    override fun stop() = post {
+        if (!started) return@post
+        started = false
+        scanGeneration++ // a scan in flight must not start anything
+        resumeOnHostStart = false
+        stopPlayer()
+        session.reset()
+        Log.i(TAG, "Stopped")
+        publish()
+    }
+
+    override fun usePlaylist(playlist: PlaylistRef?) {
+        this.playlist = playlist // at once, so a caller reading it back on its own thread sees it
+        post {
+            if (playlist == activePlaylist) return@post
+            activePlaylist = playlist
+            if (started) rescan(session.root) else folder = defaultFolderOf(settings.folder, playlist)
+        }
+    }
+
+    override fun playlistSummary(playlist: PlaylistRef): PlaylistSummary {
+        val id = playlist.id
+        val known = summaries[id]
+        val stale = known == null || id in staleSummaries || (summaryComputedAt[id] ?: 0L) < allSummariesStaleAt
+        if (stale && pendingSummaries.add(id)) {
+            val submitted = submit {
+                try {
+                    staleSummaries -= id
+                    val startedAt = System.nanoTime()
+                    val root = settings.folder
+                    val resolved = SelectionResolver.resolve(root, SelectionResolver.effective(settings.selections, root, playlist))
+                    summaries[id] = resolved.summary(MusicPermission.isGranted(app))
+                    summaryComputedAt[id] = startedAt
+                } finally {
+                    pendingSummaries -= id
+                }
+            }
+            if (!submitted) pendingSummaries -= id
+        }
+        return known ?: PlaylistSummary.PENDING
+    }
+
+    /** Makes every [playlistSummary] look at the disk again: files may have been copied over meanwhile. */
+    fun invalidateSummaries() {
+        allSummariesStaleAt = System.nanoTime()
     }
 
     override fun skip() = post {
@@ -149,13 +232,13 @@ class FolderMusicController @JvmOverloads constructor(
         publish()
     }
 
-    /** Saves [path] as the music folder, rescans it and restarts playback. Starts the controller if needed. */
+    /**
+     * Saves [path] as the music root, rescans (the playlist folder under it, if one is set) and restarts
+     * playback. Starts the controller if needed.
+     */
     fun setFolder(path: String) = post {
         val absolute = File(path.trim()).absolutePath
-        if (!started) {
-            started = true
-            settings.prefs.registerOnSharedPreferenceChangeListener(folderListener)
-        }
+        started = true
         // An explicit folder change means "play this": undo a user pause (a host stop still holds).
         if (hostStopped) resumeOnHostStart = true else session.setPaused(false)
         rescan(absolute) // before saving, so the preference listener sees no change
@@ -163,17 +246,19 @@ class FolderMusicController @JvmOverloads constructor(
     }
 
     /** Rescans the current folder (for example after the storage permission was granted). */
-    fun refresh() = post { if (started) rescan(session.folder.ifEmpty { settings.folder }) }
+    fun refresh() = post { if (started) rescan(session.root.ifEmpty { settings.folder }) }
 
     /** Host Activity became visible: resume if music was playing when it stopped; retry after a problem. */
     fun onHostStart() = post {
         hostStopped = false
+        invalidateSummaries()
+        val resume = resumeOnHostStart
+        resumeOnHostStart = false
+        if (resume) session.setPaused(false)
         if (!started) return@post
         if (session.problem != null) {
-            rescan(session.folder)
-        } else if (resumeOnHostStart) {
-            resumeOnHostStart = false
-            session.setPaused(false)
+            rescan(session.root)
+        } else if (resume) {
             player?.playWhenReady = true
             publish()
         }
@@ -182,6 +267,7 @@ class FolderMusicController @JvmOverloads constructor(
     /** Host Activity is no longer visible: pause, remembering whether to resume. */
     fun onHostStop() = post {
         hostStopped = true
+        if (!started) return@post
         if (!session.paused) resumeOnHostStart = true
         session.setPaused(true)
         player?.playWhenReady = false
@@ -194,6 +280,7 @@ class FolderMusicController @JvmOverloads constructor(
             if (released) return@post
             released = true
             settings.prefs.unregisterOnSharedPreferenceChangeListener(folderListener)
+            selectionPrefs.unregisterOnSharedPreferenceChangeListener(selectionListener)
             try {
                 player?.release()
             } catch (e: Exception) {
@@ -222,7 +309,11 @@ class FolderMusicController @JvmOverloads constructor(
             }
             override fun onActivityResumed(a: Activity) {
                 if (a === activity) post {
-                    if (session.needsPermission && MusicPermission.isGranted(app)) rescan(session.folder)
+                    if (MusicPermission.isGranted(app) != permissionSeen) {
+                        permissionSeen = !permissionSeen
+                        invalidateSummaries()
+                    }
+                    if (started && session.needsPermission && MusicPermission.isGranted(app)) rescan(session.root)
                 }
             }
             override fun onActivityPaused(a: Activity) {}
@@ -242,21 +333,63 @@ class FolderMusicController @JvmOverloads constructor(
 
     // ---- main thread ----
 
-    private fun rescan(path: String) {
+    /** Finds what the playlist plays under [newRoot] (or scans the whole root) and plays from it. */
+    private fun rescan(newRoot: String) {
         val generation = ++scanGeneration
+        val ref = activePlaylist
         stopPlayer()
-        session.beginScan(path)
-        folder = path
+        session.beginScan(newRoot, defaultFolderOf(newRoot, ref))
+        root = newRoot
+        folder = session.folder
+        Log.i(TAG, if (ref == null) "Scanning $newRoot" else "Loading playlist ${ref.id} under $newRoot")
         publish()
         submit {
-            val result = MusicScanner.scan(File(path))
             val granted = MusicPermission.isGranted(app)
-            post {
-                if (generation != scanGeneration) return@post // a newer scan replaced this one
-                play(session.scanFinished(result, granted))
+            if (ref == null) {
+                val result = MusicScanner.scan(File(newRoot))
+                post {
+                    if (generation != scanGeneration) return@post // a newer scan replaced this one
+                    play(session.scanFinished(result, granted))
+                }
+            } else {
+                val resolved = resolve(newRoot, ref)
+                post {
+                    if (generation != scanGeneration) return@post
+                    logSelection(ref, resolved)
+                    play(session.filesLoaded(resolved.files, resolved.folderLabel, resolved.problem(ref.title), granted))
+                    folder = session.folder
+                }
             }
         }
     }
+
+    /** The saved selection changed (settings screen): follow it, letting a still-selected track play on. */
+    private fun reloadSelection() {
+        val ref = activePlaylist ?: return
+        val generation = ++scanGeneration
+        val root = session.root
+        submit {
+            val granted = MusicPermission.isGranted(app)
+            val resolved = resolve(root, ref)
+            post {
+                if (generation != scanGeneration) return@post
+                logSelection(ref, resolved)
+                val carriesOn = session.filesChanged(resolved.files, resolved.folderLabel, resolved.problem(ref.title), granted)
+                folder = session.folder
+                if (carriesOn) publish() else play(session.currentFile)
+            }
+        }
+    }
+
+    private fun resolve(root: String, ref: PlaylistRef): ResolvedSelection =
+        SelectionResolver.resolve(root, SelectionResolver.effective(settings.selections, root, ref))
+
+    private fun logSelection(ref: PlaylistRef, resolved: ResolvedSelection) {
+        Log.i(TAG, "Playlist ${ref.id}: ${resolved.selectedCount} of ${resolved.totalCount} songs from ${resolved.folders.size} folder(s)")
+    }
+
+    private fun defaultFolderOf(root: String, ref: PlaylistRef?): String =
+        if (ref == null) root else Playlist.folder(root, ref.defaultFolder)
 
     private fun play(file: File?) {
         if (file == null) {
@@ -264,6 +397,14 @@ class FolderMusicController @JvmOverloads constructor(
             publish()
             return
         }
+        if (!file.isFile) {
+            // Gone since the scan. Checked here because the player retries a missing file for
+            // several seconds before it reports an error.
+            Log.w(TAG, "Missing ${file.path}")
+            currentFileFailed()
+            return
+        }
+        Log.i(TAG, "Playing ${file.path}")
         val p = player ?: createPlayer().also { player = it }
         p.setMediaItem(MediaItem.fromUri(Uri.fromFile(file)))
         p.prepare()
@@ -275,6 +416,18 @@ class FolderMusicController @JvmOverloads constructor(
                 session.tagsRead(file, tags.title, tags.artist, tags.album)
                 publish()
             }
+        }
+    }
+
+    /** The current file cannot be played: move on, or stop with a problem. */
+    private fun currentFileFailed() {
+        if (!started) return
+        if (session.folder.isNotEmpty() && !File(session.folder).isDirectory) {
+            // The folder itself went away (renamed, deleted, storage removed): rescan, so the problem
+            // says the folder is missing instead of failing file after file up to the cap.
+            rescan(session.root)
+        } else {
+            play(session.trackFailed())
         }
     }
 

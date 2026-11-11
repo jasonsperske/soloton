@@ -1,5 +1,9 @@
-package dev.soloton.roadwork
+package dev.soloton.roadwork.env.riverfront
 
+import dev.soloton.roadwork.MeshWriter
+import dev.soloton.roadwork.Rng
+import dev.soloton.roadwork.BikeOverlay
+import dev.soloton.roadwork.RoadworkGame
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -87,10 +91,10 @@ class GeometryTest {
         assertTrue(water in 1000 until Skyline.MAX_VERTICES)
         // Worst case on screen: detailed sections over the detail distance plus an overhang, plain
         // sections out to the far plane, every chunk, water, jogger and handlebars: under ~60k triangles.
-        val detailSections = (RoadworkGame.SKYLINE_DETAIL_DISTANCE / Skyline.SECTION_LENGTH).toInt() + 2
-        val plainSections = (RoadworkGame.SKYLINE_FAR / Skyline.SECTION_LENGTH).toInt() + 1
+        val detailSections = (RiverfrontScene.SKYLINE_DETAIL_DISTANCE / Skyline.SECTION_LENGTH).toInt() + 2
+        val plainSections = (RiverfrontScene.SKYLINE_FAR / Skyline.SECTION_LENGTH).toInt() + 1
         val worst = (planes + detailSections * maxSection + plainSections * simple / Skyline.SECTIONS + water +
-            RoadworkGame.CHUNK_SLOTS * chunk + JoggerModel.MAX_VERTICES + BikeOverlay.MAX_VERTICES) / 3
+            RiverfrontScene.CHUNK_SLOTS * chunk + JoggerModel.MAX_VERTICES + BikeOverlay.MAX_VERTICES) / 3
         println("worst case on screen: $worst triangles")
         assertTrue(worst < 60_000, "worst case $worst triangles")
     }
@@ -109,7 +113,7 @@ class GeometryTest {
             // Everything sits in one period, so copies tile without overlapping.
             assertTrue(p[2] <= 0.01f && p[2] >= -Skyline.PERIOD - 0.01f, "z ${p[2]} outside the period")
             // Never closer to the path than the skyline camera's near plane.
-            assertTrue(kotlin.math.abs(p[0]) >= RoadworkGame.SKYLINE_NEAR, "x ${p[0]} too close")
+            assertTrue(kotlin.math.abs(p[0]) >= RiverfrontScene.SKYLINE_NEAR, "x ${p[0]} too close")
             if (p[0] > 0f) tallest = maxOf(tallest, p[1])
         }
         assertTrue(tallest > 200f, "a dominant skyline needs some tall towers ($tallest m)")

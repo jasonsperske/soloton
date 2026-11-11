@@ -1,6 +1,8 @@
 .gradle/
 build/
 local.properties
+# Machine-specific settings such as your own music folder; copy .env.example
+.env
 *.iml
 .idea/
 .kotlin/

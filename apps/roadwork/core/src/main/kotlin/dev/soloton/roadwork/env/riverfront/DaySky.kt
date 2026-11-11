@@ -1,7 +1,8 @@
-package dev.soloton.roadwork
+package dev.soloton.roadwork.env.riverfront
 
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.math.Vector3
+import dev.soloton.roadwork.SceneLight
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -10,14 +11,14 @@ import kotlin.math.sin
  * round and the light warms slightly, so a long ride never looks frozen; after that it holds.
  * There is no night. All outputs are mutable fields updated in place by [update].
  */
-class DaySky {
+class DaySky : SceneLight {
     val zenith = Color()
     val horizon = Color()
-    val sunColor = Color()
-    val ambientSky = Color()
-    val ambientGround = Color()
+    override val sunColor = Color()
+    override val ambientSky = Color()
+    override val ambientGround = Color()
     /** Unit vector pointing toward the sun. */
-    val sunDirection = Vector3()
+    override val sunDirection = Vector3()
     /** 0 at the start of a session, 1 once the drift is complete. */
     var progress = 0f
         private set

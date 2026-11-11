@@ -37,6 +37,8 @@ import kotlin.math.sin
  * ```
  * Speed leads in km/h (the cycling convention) with pace per km below it. The rider's own
  * handlebars are drawn in the gap between the two bottom panels. Positions come from [HudLayout].
+ * While paused, a dimmed overlay adds the PAUSED banner, the environment's name and an
+ * "Environments" button that leaves the ride for the picker.
  * Buttons are 120 px squares (at 1080 p). Text is the libGDX default font scaled up and
  * sharpened by an alpha-threshold shader. Text layouts are rebuilt only when their value changes.
  */
@@ -47,6 +49,9 @@ internal class Hud(private val listener: Listener) : InputAdapter() {
         fun onSkip()
         fun onTogglePause()
         fun onSettings()
+
+        /** The pause overlay's "Environments" button, or back: leave the ride for the picker. */
+        fun onEnvironments()
     }
 
     private val layout = HudLayout()
@@ -76,8 +81,12 @@ internal class Hud(private val listener: Listener) : InputAdapter() {
     private val speedLayout = GlyphLayout()
     private val musicLabelLayout = GlyphLayout()
     private val musicLineLayout = GlyphLayout()
+    private val musicDetailLayout = GlyphLayout()
     private val pausedLayout = GlyphLayout()
     private val pausedHintLayout = GlyphLayout()
+    private val environmentLayout = GlyphLayout()
+    private val environmentsButtonLayout = GlyphLayout()
+    private var pausedShown = false
     private val elapsedLabelLayout = GlyphLayout()
     private var shownSeconds = -1L
     private var shownDecameters = -1L
@@ -96,6 +105,7 @@ internal class Hud(private val listener: Listener) : InputAdapter() {
         layoutText(pausedLayout, "PAUSED", SCALE_HUGE, Color.WHITE)
         layoutText(pausedHintLayout, "Tap the play button to carry on", SCALE_SMALL, TEXT_DIM)
         layoutText(elapsedLabelLayout, "ELAPSED", SCALE_SMALL, TEXT_DIM)
+        layoutText(environmentsButtonLayout, "Environments", SCALE_MEDIUM, Color.WHITE)
         resize(Gdx.graphics.width, Gdx.graphics.height)
     }
 
@@ -110,6 +120,11 @@ internal class Hud(private val listener: Listener) : InputAdapter() {
 
     fun setPaceAdjustable(adjustable: Boolean) { showPace = adjustable }
 
+    /** The environment's name, shown under the PAUSED banner only, so the ride view stays clear. Call after [create]. */
+    fun setEnvironmentTitle(title: String) {
+        layoutText(environmentLayout, title, SCALE_SMALL, TEXT_DIM)
+    }
+
     fun draw(
         elapsedSeconds: Double,
         distanceMeters: Double,
@@ -118,6 +133,7 @@ internal class Hud(private val listener: Listener) : InputAdapter() {
         paused: Boolean,
     ) {
         refreshText(elapsedSeconds, distanceMeters, speed, music)
+        pausedShown = paused
         if (pressed != null) {
             pressedTime -= Gdx.graphics.deltaTime
             if (pressedTime <= 0f) pressed = null
@@ -145,6 +161,7 @@ internal class Hud(private val listener: Listener) : InputAdapter() {
             button(Button.SLOWER)
             button(Button.FASTER)
         }
+        if (paused) button(Button.ENVIRONMENTS)
         icons(paused)
         shapes.end()
 
@@ -162,11 +179,23 @@ internal class Hud(private val listener: Listener) : InputAdapter() {
 
         val mx = musicPanel.x + 104f
         drawText(musicLabelLayout, SCALE_SMALL, mx, musicPanel.y + musicPanel.height - 30f)
-        drawText(musicLineLayout, SCALE_MEDIUM, mx, musicPanel.y + 70f)
+        if (musicProblem) {
+            // Two small lines instead of one: the whole folder must be readable, then what is wrong with it.
+            drawText(musicLineLayout, SCALE_SMALL, mx, musicPanel.y + 88f)
+            drawText(musicDetailLayout, SCALE_SMALL, mx, musicPanel.y + 50f)
+        } else {
+            drawText(musicLineLayout, SCALE_MEDIUM, mx, musicPanel.y + 70f)
+        }
 
         if (paused) {
             drawText(pausedLayout, SCALE_HUGE, (width - pausedLayout.width) / 2f, HEIGHT / 2f + 60f)
             drawText(pausedHintLayout, SCALE_SMALL, (width - pausedHintLayout.width) / 2f, HEIGHT / 2f - 20f)
+            drawText(environmentLayout, SCALE_SMALL, (width - environmentLayout.width) / 2f, HEIGHT / 2f - 70f)
+            val e = rect(Button.ENVIRONMENTS)
+            drawText(
+                environmentsButtonLayout, SCALE_MEDIUM,
+                e.x + (e.width - environmentsButtonLayout.width) / 2f, e.y + (e.height + environmentsButtonLayout.height) / 2f,
+            )
         }
         batch.end()
         Gdx.gl.glDisable(GL20.GL_BLEND)
@@ -243,8 +272,9 @@ internal class Hud(private val listener: Listener) : InputAdapter() {
                     layoutText(musicLineLayout, trackLine(music.track.title, music.track.artist), SCALE_MEDIUM, Color.WHITE, lineWidth)
                 }
                 is MusicState.Problem -> {
-                    layoutText(musicLabelLayout, "NO MUSIC  (tap the gear to choose a folder)", SCALE_SMALL, WARN, lineWidth)
-                    layoutText(musicLineLayout, music.message.replace(music.folder, shortFolder(music.folder)), SCALE_MEDIUM, Color.WHITE, lineWidth)
+                    layoutText(musicLabelLayout, "NO MUSIC IN  (gear: settings, skip: retry)", SCALE_SMALL, WARN, lineWidth)
+                    layoutFolder(musicLineLayout, shortFolder(music.folder), lineWidth)
+                    layoutText(musicDetailLayout, problemDetail(music), SCALE_SMALL, TEXT_DIM, lineWidth)
                 }
             }
         }
@@ -256,6 +286,29 @@ internal class Hud(private val listener: Listener) : InputAdapter() {
             if (folder.startsWith(prefix) && folder.length > prefix.length) return folder.substring(prefix.length)
         }
         return folder
+    }
+
+    /**
+     * Lays out a folder path in small text. One that is too wide loses leading folders, not its
+     * end: the last folder is the one the rider has to copy music into.
+     */
+    private fun layoutFolder(layout: GlyphLayout, folder: String, maxWidth: Float) {
+        var text = folder
+        layoutText(layout, text, SCALE_SMALL, Color.WHITE)
+        while (layout.width > maxWidth) {
+            val cut = text.indexOf('/', if (text.startsWith(".../")) 4 else 1)
+            if (cut < 0 || cut == text.length - 1) break
+            text = ".../" + text.substring(cut + 1)
+            layoutText(layout, text, SCALE_SMALL, Color.WHITE)
+        }
+        if (layout.width > maxWidth) layoutText(layout, text, SCALE_SMALL, Color.WHITE, maxWidth)
+    }
+
+    /** What is wrong, without repeating the folder that is shown on the line above. */
+    private fun problemDetail(problem: MusicState.Problem): String {
+        val lead = "No music found in ${problem.folder}. "
+        return if (problem.message.startsWith(lead)) problem.message.substring(lead.length)
+        else problem.message.replace(problem.folder, shortFolder(problem.folder))
     }
 
     private fun trackLine(title: String, artist: String?): String =
@@ -365,6 +418,7 @@ internal class Hud(private val listener: Listener) : InputAdapter() {
     fun hitTest(x: Float, y: Float): Button? {
         for (b in Button.entries) {
             if (!showPace && (b == Button.SLOWER || b == Button.FASTER)) continue
+            if (!pausedShown && b == Button.ENVIRONMENTS) continue
             val r = layout.rect(b)
             if (x >= r.x - SLOP && x <= r.x + r.width + SLOP && y >= r.y - SLOP && y <= r.y + r.height + SLOP) return b
         }
@@ -378,6 +432,11 @@ internal class Hud(private val listener: Listener) : InputAdapter() {
             Input.Keys.RIGHT, Input.Keys.PLUS, Input.Keys.EQUALS, Input.Keys.UP -> Button.FASTER
             Input.Keys.N -> Button.SKIP
             Input.Keys.S -> Button.SETTINGS
+            // Android's back button (caught by the game) and Escape leave the ride from any state.
+            Input.Keys.BACK, Input.Keys.ESCAPE, Input.Keys.E -> {
+                listener.onEnvironments()
+                return true
+            }
             else -> return false
         }
         if (!showPace && (b == Button.SLOWER || b == Button.FASTER)) return false
@@ -394,6 +453,7 @@ internal class Hud(private val listener: Listener) : InputAdapter() {
             Button.SKIP -> listener.onSkip()
             Button.PAUSE -> listener.onTogglePause()
             Button.SETTINGS -> listener.onSettings()
+            Button.ENVIRONMENTS -> listener.onEnvironments()
         }
     }
 

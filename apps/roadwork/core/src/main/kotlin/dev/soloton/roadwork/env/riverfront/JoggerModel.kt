@@ -1,5 +1,6 @@
-package dev.soloton.roadwork
+package dev.soloton.roadwork.env.riverfront
 
+import dev.soloton.roadwork.MeshWriter
 import com.badlogic.gdx.math.Matrix4
 import kotlin.math.PI
 import kotlin.math.cos

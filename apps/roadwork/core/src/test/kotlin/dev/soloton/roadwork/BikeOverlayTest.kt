@@ -2,6 +2,7 @@ package dev.soloton.roadwork
 
 import com.badlogic.gdx.math.Rectangle
 import com.badlogic.gdx.math.Vector3
+import dev.soloton.roadwork.env.riverfront.JoggerMotion
 import kotlin.math.tan
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -87,12 +88,12 @@ class BikeOverlayTest {
     fun overlayStaysBelowTheJoggerAtTheClosestGap() {
         // The jogger's feet at the minimum gap, seen from the rider's camera.
         // Into the rider camera's eye space: move to the eye, then undo the downward pitch.
-        val pitch = kotlin.math.atan(RoadworkGame.CAMERA_PITCH)
-        val y = 0f - RoadworkGame.EYE_HEIGHT
+        val pitch = kotlin.math.atan(RiderCamera.PITCH)
+        val y = 0f - RiderCamera.EYE_HEIGHT
         val z = -JoggerMotion.MIN_GAP
         val c = kotlin.math.cos(pitch); val s = kotlin.math.sin(pitch)
-        val feet = Vector3(JoggerMotion.lateral(0.0) - RoadworkGame.CAMERA_X, y * c - z * s, y * s + z * c)
-        project(feet, RoadworkGame.FOV)
+        val feet = Vector3(JoggerMotion.lateral(0.0) - RiderCamera.X, y * c - z * s, y * s + z * c)
+        project(feet, RiderCamera.FOV)
         val top = BikeOverlay.ALLOWED.y + BikeOverlay.ALLOWED.height
         assertTrue(feet.y > top, "jogger's feet at ${feet.y} px, overlay strip top at $top px")
     }

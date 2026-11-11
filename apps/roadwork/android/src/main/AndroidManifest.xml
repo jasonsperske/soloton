@@ -21,11 +21,5 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <!--
-          Music settings comes from libs:music. Keep the soft keyboard closed until the path field is
-          tapped: otherwise it opens over half the screen and drops immersive mode. Remove this once
-          libs:music declares stateHidden itself.
-        -->
     </application>
 </manifest>

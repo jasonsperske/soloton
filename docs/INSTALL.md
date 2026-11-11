@@ -46,20 +46,59 @@ Release notes on GitHub say whether an APK was signed with the release key. See 
 
 ## Copying music to the tablet
 
-Apps with music play files you copy onto the tablet. They never use the network. Supported formats: mp3, ogg, opus, m4a, aac and wav. FLAC is scanned but Android 7.0 has no FLAC decoder, so FLAC files are skipped on the bike; convert them to ogg or mp3 first. Sub-folders are scanned too.
+Apps with music play files you copy onto the tablet. They never use the network. Supported formats: mp3, ogg, opus, m4a, aac and wav. FLAC is scanned but Android 7.0 has no FLAC decoder, so FLAC files are skipped on the bike; convert them to ogg or mp3 first.
 
-1. Copy a folder of music to the default location, `/sdcard/Music/soloton/`:
+### Layout: one folder per game under the music root
+
+Roadwork plays different music in each [environment](ENVIRONMENTS.md). Each environment starts with one folder, and you can then [choose folders and songs](#choosing-folders-and-songs-on-the-tablet) for it on the tablet. Music lives under one **music root**, by default `/sdcard/Music/soloton/`, one sub-folder per game:
+
+```
+/sdcard/Music/soloton/                  <- the music root (set in the app's music settings)
+    Mike Tyson's Punch-Out!!/           <- one folder per game, named exactly as the environment expects
+        01 - Demo Song One.mp3
+        02 - Demo Song Two.mp3
+        game.json                       <- other files are ignored
+    Night Circuit/
+        01 - Demo Tune One.mp3
+```
+
+| Environment | Folder it plays by default, under the music root |
+|---|---|
+| Riverfront Roadwork (`riverfront`) | `Mike Tyson's Punch-Out!!` |
+
+Until you choose otherwise, an environment plays only its default folder; other folders under the root are left alone, so you can copy your whole library once. The default folder's name must match exactly, including capitals, the apostrophe and the `!!`. Files without tags show their file name as the title with a leading track number removed (`01 - Song.mp3`, `1. Song.mp3` and `01_Song.mp3` all show as "Song"), and the folder name as the album.
+
+### Copying with adb
+
+1. Copy each game's folder into the music root. `adb push` of a folder creates that folder on the tablet:
 
    ```bash
    adb shell mkdir -p /sdcard/Music/soloton
-   adb push ~/Music/workout/. /sdcard/Music/soloton/
+   adb push 'Mike Tyson'\''s Punch-Out!!' /sdcard/Music/soloton/
    ```
 
-   The trailing `/.` copies the folder's contents. Without it, `adb push ~/Music/workout /sdcard/Music/soloton/` creates `/sdcard/Music/soloton/workout/`, which also works because sub-folders are scanned.
+   Quoting matters for this name. Use single quotes so that an interactive shell does not treat `!!` as history expansion, and write the apostrophe as `'\''` (close the quote, an escaped apostrophe, reopen the quote). To copy a whole library of game folders at once: `adb push ~/Music/games/. /sdcard/Music/soloton/` (the trailing `/.` copies the folder's contents).
 
-2. Start the app and allow access to storage when it asks. It asks on first launch and whenever you change the folder.
-3. To use a different folder, tap the gear on the app's screen and pick the folder in the settings screen's folder browser, or type its path. The settings screen shows the current folder and how many tracks it found. The change takes effect without restarting.
+2. Start the app and allow access to storage when it asks. It asks on first launch.
 
-If the folder is missing, empty or unreadable, the app shows the path with a button to open settings and keeps running without music.
+If an environment has nothing to play (its folder is missing, empty or unreadable, or no songs are ticked), its card on the picker says so in amber, and during a ride the music panel shows the folder and what is wrong; the app keeps running without music. After copying the folder over, tap the skip button to try again, or open and close settings; no restart is needed.
 
-To check what is on the tablet: `adb shell ls -R /sdcard/Music/soloton`.
+### Choosing folders and songs on the tablet
+
+Each environment has its own music. Tap **Music** on its card on the picker, or the gear during a ride, to open its settings ([screenshot](../apps/roadwork/docs/android-emulator-settings.png)):
+
+- **Left: the folders that play in this environment**, each with how many of its songs are ticked. Tap a folder to see its songs. **Remove** takes a folder off the list (nothing is deleted from the tablet). **Reset to default** goes back to the environment's default folder with every song ticked.
+- **Right: the selected folder's songs**, each with a tick box. Tap a song to tick or untick it; **All** and **None** do the whole folder. Only ticked songs play. Songs you copy into the folder later start ticked.
+- **Add folder** opens a browser that starts at the music root and lists its sub-folders with their song counts ([screenshot](../apps/roadwork/docs/android-emulator-add-folder.png)). Tap a folder to go into it, then **Add this folder**. Any number of folders can be added, from anywhere on the tablet; adding one that is already on the list changes nothing. A folder's songs are the audio files directly in it: for a folder that only holds sub-folders, settings offers the sub-folders to add instead.
+- **Music root** (bottom left, **Change**): the folder your game folders live in. Browse to it and tap **Use as the root**, or type its path. Folders inside the root are remembered relative to it, so after moving your library and changing the root your folders and ticks still apply.
+
+Every change is saved as you make it, per environment, and survives restarts and app updates. A change made during a ride takes effect when you return to it, and a song that is still ticked keeps playing. A folder on the list that is no longer on the tablet is shown greyed as "missing" and skipped; copy it back and it plays again. If you untick everything the app tells you: "No songs selected for Riverfront Roadwork".
+
+To check what is on the tablet:
+
+```bash
+adb shell ls -R /sdcard/Music/soloton
+adb shell 'ls "/sdcard/Music/soloton/Mike Tyson'\''s Punch-Out!!"'
+```
+
+The second command runs through the tablet's shell as well, so the path is wrapped in double quotes inside the single-quoted command.

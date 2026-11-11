@@ -94,6 +94,10 @@ jobs:
       - name: Doctor
         run: scripts/doctor.sh --no-emulator
 
+      # The .env loader and the music sync planning behind scripts/gen1-emulator.sh.
+      - name: Script tests
+        run: scripts/test.sh
+
       - name: Run checks
         run: ./gradlew check
 

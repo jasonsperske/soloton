@@ -41,6 +41,26 @@ object MusicScanner {
         }
     }
 
+    /** What is directly in a folder: its audio files and its sub-folders, each by name. Hidden entries are skipped. */
+    data class Listing(val songs: List<File>, val subfolders: List<File>)
+
+    /** Lists [dir] without descending. Blocking. @return null if it is not a folder or cannot be read */
+    fun list(dir: File): Listing? {
+        val entries = try {
+            dir.listFiles()
+        } catch (e: SecurityException) {
+            null
+        } ?: return null
+        val visible = entries.filter { !it.name.startsWith(".") }
+        return Listing(
+            songs = visible.filter { it.isFile && isAudioFile(it) }.sortedWith(BY_NAME),
+            subfolders = visible.filter { it.isDirectory }.sortedWith(BY_NAME),
+        )
+    }
+
+    /** Case-insensitive by name, so "02 - b" follows "01 - A"; ties broken by the exact name. */
+    private val BY_NAME: Comparator<File> = compareBy<File> { it.name.lowercase() }.thenBy { it.name }
+
     private fun walk(entries: Array<File>, out: MutableList<File>, visited: MutableSet<String>, depth: Int) {
         for (f in entries) {
             if (f.name.startsWith(".")) continue

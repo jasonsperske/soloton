@@ -3,22 +3,35 @@ package dev.soloton.roadwork.desktop
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration
 import dev.soloton.api.SilentMusicController
+import dev.soloton.roadwork.Environment
+import dev.soloton.roadwork.Environments
 import dev.soloton.roadwork.RoadworkGame
 import java.io.File
 import kotlin.system.exitProcess
 
-private const val USAGE = """Usage: roadwork-desktop [--screenshot <out.png> --at <seconds> [--size <W>x<H>]]
+private const val USAGE = """Usage: roadwork-desktop [--screenshot <out.png> [--at <seconds>] [--size <W>x<H>]]
                         [--stats [--duration <seconds>]] [--silent-music]
-                        [--view rider|jogger-side|jogger-front|jogger-back]
+                        [--env <id>] [--picker] [--list-envs] [--view rider|<name>]
 
-Without arguments, opens a 1280x720 window. Keys: space pause, left/right pace, N skip, S settings.
---screenshot    render one frame offscreen and write it as PNG, then exit
+Without arguments, opens a 1280x720 window on the environment picker.
+Picker keys: left/right choose, Enter ride, Escape quit.
+Ride keys: space pause, left/right pace, N skip, S settings, Escape or E back to the picker.
+--screenshot    render one frame offscreen and write it as PNG, then exit: a ride (in --env, or the
+                default environment), or with --picker the picker
 --at            simulated seconds to advance to (fixed 1/60 s steps), default 0
 --size          image size, default 1920x1080 (the bike's display)
 --stats         open a window (vsync off) and log frame time, draw calls and per-frame allocation
 --duration      with --stats, exit after this many seconds (default: run until closed)
 --silent-music  use the no-op music controller instead of the demo track list
---view          camera: rider (default, from the saddle) or a close-up of the jogger"""
+--env           skip the picker and ride this environment
+--picker        start on the picker even with --screenshot or --stats; --env then only says which
+                environment is outlined as the one ridden last
+--list-envs     print each environment's id, title and music folder, then exit
+--view          camera: rider (default, from the saddle) or one of the environment's development
+                cameras (riverfront: jogger-side, jogger-front, jogger-back)
+
+Music is a silent demo. Set SOLOTON_MUSIC_DIR to a folder holding one sub-folder per game (the
+layout of the tablet's music root) to see real song names and counts; see .env.example."""
 
 fun main(args: Array<String>) {
     val opts = try {
@@ -31,6 +44,20 @@ fun main(args: Array<String>) {
         println(USAGE)
         return
     }
+    if (opts.listEnvs) {
+        print(describeEnvironments(Environments.all, Environments.default))
+        return
+    }
+    val environment = Environments.find(opts.env ?: Environments.default.id) ?: run {
+        System.err.println("error: no environment '${opts.env}'. Known: ${Environments.all.joinToString(", ") { it.id }}")
+        exitProcess(2)
+    }
+    // A scene touches no OpenGL until it is created, so one can be asked for its camera names here.
+    val views = environment.createScene(RoadworkGame.DEFAULT_SEED).inspectionViews
+    if (opts.view != null && opts.view !in views) {
+        System.err.println("error: --view must be ${(listOf("rider") + views).joinToString(", ")} for ${environment.id}")
+        exitProcess(2)
+    }
 
     val config = Lwjgl3ApplicationConfiguration().apply {
         setTitle("Roadwork")
@@ -38,9 +65,9 @@ fun main(args: Array<String>) {
         setOpenGLEmulation(Lwjgl3ApplicationConfiguration.GLEmulation.GL20, 2, 0)
     }
 
-    val music = if (opts.silentMusic) SilentMusicController("(desktop)") else DemoMusicController()
-    val game = RoadworkGame(music = music)
-    game.view = opts.view
+    val music = if (opts.silentMusic) SilentMusicController("(desktop)") else DemoMusicController(DemoMusicController.musicDirFromEnvironment())
+    val game = RoadworkGame(music = music, environment = environment, startOnPicker = opts.startsOnPicker)
+    game.setInspectionView(opts.view)
     val shot = opts.screenshot
     if (shot == null) {
         if (opts.stats) {
@@ -70,7 +97,7 @@ fun main(args: Array<String>) {
         System.err.println("screenshot failed: $shot was not written")
         exitProcess(1)
     }
-    println("wrote $shot (${opts.width}x${opts.height}, t=${opts.atSeconds}s)")
+    println("wrote $shot (${opts.width}x${opts.height}, ${if (opts.startsOnPicker) "picker" else "t=${opts.atSeconds}s"})")
     exitProcess(0)
 }
 
@@ -83,8 +110,29 @@ internal data class Options(
     val stats: Boolean = false,
     val durationSeconds: Float = 0f,
     val silentMusic: Boolean = false,
-    val view: RoadworkGame.View = RoadworkGame.View.RIDER,
-)
+    /** Environment id, or null for the default. */
+    val env: String? = null,
+    val listEnvs: Boolean = false,
+    /** One of the environment's development cameras, or null for the rider's view. */
+    val view: String? = null,
+    /** Start on the picker even where a ride is the default (screenshots, stats). */
+    val picker: Boolean = false,
+) {
+    /** The window opens on the picker; `--env`, `--screenshot` and `--stats` go straight to a ride unless `--picker` is given. */
+    val startsOnPicker: Boolean get() = picker || (env == null && screenshot == null && !stats)
+}
+
+/** One line per environment: id, title and music folder, with the default marked. */
+internal fun describeEnvironments(all: List<Environment>, default: Environment): String = buildString {
+    val idWidth = all.maxOf { it.id.length }
+    val titleWidth = all.maxOf { it.title.length }
+    for (e in all) {
+        append(e.id.padEnd(idWidth)).append("  ").append(e.title.padEnd(titleWidth)).append("  ")
+        append(e.musicFolder?.let { "music: $it" } ?: "music: (whole music root)")
+        if (e === default) append("  [default]")
+        append('\n')
+    }
+}
 
 internal fun parseArgs(args: Array<String>): Options {
     var opts = Options()
@@ -108,15 +156,10 @@ internal fun parseArgs(args: Array<String>): Options {
                     ?: throw IllegalArgumentException("--duration needs a positive number"),
             )
             "--silent-music" -> opts = opts.copy(silentMusic = true)
-            "--view" -> opts = opts.copy(
-                view = when (value(a)) {
-                    "rider" -> RoadworkGame.View.RIDER
-                    "jogger-side" -> RoadworkGame.View.JOGGER_SIDE
-                    "jogger-front" -> RoadworkGame.View.JOGGER_FRONT
-                    "jogger-back" -> RoadworkGame.View.JOGGER_BACK
-                    else -> throw IllegalArgumentException("--view must be rider, jogger-side, jogger-front or jogger-back")
-                },
-            )
+            "--env" -> opts = opts.copy(env = value(a))
+            "--picker" -> opts = opts.copy(picker = true)
+            "--list-envs" -> opts = opts.copy(listEnvs = true)
+            "--view" -> opts = opts.copy(view = value(a).takeIf { it != "rider" })
             "-h", "--help" -> opts = opts.copy(help = true)
             else -> throw IllegalArgumentException("unknown argument: $a")
         }

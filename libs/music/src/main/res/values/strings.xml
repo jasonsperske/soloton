@@ -1,20 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="soloton_music_title">Music</string>
-    <string name="soloton_music_current_folder">Folder: %1$s</string>
-    <string name="soloton_music_scanning">Looking for music…</string>
-    <plurals name="soloton_music_tracks_found">
-        <item quantity="one">%d track found</item>
-        <item quantity="other">%d tracks found</item>
+    <string name="soloton_music_title_for">Music for %1$s</string>
+    <string name="soloton_music_folders">Folders that play here. Tap one to choose its songs.</string>
+    <string name="soloton_music_folder_row">Folder %1$s</string>
+    <plurals name="soloton_music_songs_of">
+        <item quantity="one">%1$d of %2$d song</item>
+        <item quantity="other">%1$d of %2$d songs</item>
     </plurals>
+    <string name="soloton_music_folder_missing">missing</string>
+    <string name="soloton_music_folder_missing_detail">This folder is missing, so it is skipped. Copy it back to the tablet and it will play again, or remove it from the list.</string>
+    <string name="soloton_music_remove">Remove</string>
+    <string name="soloton_music_add_folder">Add folder</string>
+    <string name="soloton_music_reset">Reset to default</string>
+    <string name="soloton_music_current_folder">Music root: %1$s</string>
+    <string name="soloton_music_change_root">Change</string>
+    <string name="soloton_music_songs">Songs</string>
+    <string name="soloton_music_pick_folder">Add a folder on the left, then tick the songs to play from it.</string>
+    <string name="soloton_music_all">All</string>
+    <string name="soloton_music_none">None</string>
+    <string name="soloton_music_only_subfolders">No songs directly in this folder. Tap one of its sub-folders to add it:</string>
+    <string name="soloton_music_no_songs_here">No songs in this folder. Supported files: aac, m4a, mp3, ogg, opus, wav.</string>
+    <plurals name="soloton_music_song_count">
+        <item quantity="one">%d song</item>
+        <item quantity="other">%d songs</item>
+    </plurals>
+    <string name="soloton_music_scanning">Looking for music…</string>
     <string name="soloton_music_permission_needed">Music needs permission to read the tablet\'s storage.</string>
     <string name="soloton_music_allow">Allow storage access</string>
-    <string name="soloton_music_type_path">Or type a folder path:</string>
+    <string name="soloton_music_type_path">Or type the path of the music root</string>
     <string name="soloton_music_use_typed">Use typed path</string>
     <string name="soloton_music_done">Done</string>
-    <string name="soloton_music_browse">Browse folders</string>
+    <string name="soloton_music_add_folder_title">Add a folder</string>
+    <string name="soloton_music_add_this">Add this folder</string>
+    <string name="soloton_music_cancel">Cancel</string>
+    <string name="soloton_music_browse">Choose the music root</string>
     <string name="soloton_music_up">Up</string>
-    <string name="soloton_music_use_this">Use this folder</string>
+    <string name="soloton_music_use_this">Use as the root</string>
     <string name="soloton_music_cannot_read">This folder cannot be read.</string>
-    <string name="soloton_music_no_subfolders">No subfolders here.</string>
+    <string name="soloton_music_no_subfolders">No sub-folders here.</string>
 </resources>

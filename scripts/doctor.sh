@@ -13,7 +13,8 @@
 # They download a Temurin JDK 17 (Adoptium) and the Android command-line tools (Google),
 # verify both against the checksums their publishers list, install SDK packages with
 # sdkmanager (accepting the Android SDK licences), write local.properties so Gradle finds
-# the SDK, and create the gen 1 tablet emulator. Anything that needs root (KVM access,
+# the SDK, create the gen 1 tablet emulator, and create .env from .env.example (with the music
+# folder left empty for you to fill in). Anything that needs root (KVM access,
 # Xvfb, Mesa) or an account (GitHub login) is reported with the command to run yourself.
 #
 # Exit status: 0 when every required check passes, 1 otherwise. Optional checks only warn.
@@ -31,7 +32,7 @@ for arg in "$@"; do
     --fix) FIX=1 ;;
     --no-emulator) EMULATOR=0 ;;
     --shell) SHELLRC=1 ;;
-    -h|--help) sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "unknown option: $arg (try --help)" >&2; exit 2 ;;
   esac
 done
@@ -392,6 +393,34 @@ if [ "$OS" = Linux ]; then
   else warn "xvfb-run" "not found"; hint "sudo apt-get install xvfb   (or your distro's equivalent)"; fi
   if have ldconfig && ldconfig -p 2>/dev/null | grep -q 'libGL\.so\.1'; then ok "OpenGL (Mesa)" "libGL found"
   else warn "OpenGL (Mesa)" "libGL not found"; hint "sudo apt-get install libgl1-mesa-dri"; fi
+fi
+
+# ---------- local music (optional) ----------
+# Counts only: what is in the folder is nobody else's business, so no names are printed.
+section "Your music for the emulator and desktop (optional: .env, docs/BUILDING.md)"
+if [ ! -f "$ROOT/.env" ] && [ "$FIX" = 1 ] && [ -f "$ROOT/.env.example" ]; then
+  cp "$ROOT/.env.example" "$ROOT/.env" && fixed
+  fixing "created .env from .env.example; set SOLOTON_MUSIC_DIR in it to a folder holding one sub-folder per game"
+fi
+if [ -f "$ROOT/.env" ]; then
+  if git -C "$ROOT" check-ignore -q .env 2>/dev/null; then ok ".env" "present, ignored by git"
+  else warn ".env" "present but NOT ignored by git: do not commit it"; fi
+else
+  warn ".env" "not present (only needed to use your own music)"
+  hint "cp .env.example .env   then set SOLOTON_MUSIC_DIR   (or: scripts/doctor.sh --fix)"
+fi
+MUSIC_DIR="$( . "$ROOT/scripts/lib/dotenv.sh"; soloton_load_dotenv "$ROOT/.env"; printf '%s' "${SOLOTON_MUSIC_DIR:-}" )"
+if [ -z "$MUSIC_DIR" ]; then
+  warn "SOLOTON_MUSIC_DIR" "not set: the emulator gets no music and the desktop demo uses made-up names"
+  [ -f "$ROOT/.env" ] && hint "set SOLOTON_MUSIC_DIR in .env to a folder holding one sub-folder per game"
+elif [ ! -d "$MUSIC_DIR" ] || [ ! -r "$MUSIC_DIR" ] || [ ! -x "$MUSIC_DIR" ]; then
+  warn "SOLOTON_MUSIC_DIR" "set, but it is not a readable folder on this computer"
+  hint "check the path in .env"
+else
+  music_folders="$(find "$MUSIC_DIR" -mindepth 1 -maxdepth 1 -type d ! -name '.*' 2>/dev/null | wc -l | tr -d ' ')"
+  music_songs="$( . "$ROOT/scripts/lib/music-sync.sh"; soloton_music_local_list "$MUSIC_DIR" 2>/dev/null | wc -l | tr -d ' ')"
+  if [ "$music_songs" -gt 0 ]; then ok "SOLOTON_MUSIC_DIR" "readable: $music_folders game folder(s), $music_songs song(s)"
+  else warn "SOLOTON_MUSIC_DIR" "readable, but it holds no audio files ($music_folders folder(s))"; fi
 fi
 
 # ---------- GitHub (optional) ----------
