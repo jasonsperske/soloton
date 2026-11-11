@@ -1,7 +1,7 @@
 {
   "repo": "jasonsperske/soloton",
-  "updated": "2026-11-11T04:28:00Z",
-  "summary": "Roadwork 0.1.1 is released, signed with the release key, and the owner reports the bike's sensor data works on the real bike. A second environment, Skylift Mesa, uses the bike's resistance: the harder it is set, the higher you fly and the busier the sky. Resistance is not yet tested on the bike.",
+  "updated": "2026-11-11T08:05:00Z",
+  "summary": "Roadwork 0.2.0 is released with a second environment, Skylift Mesa. A third, Pedalcraft Island, is pedal-powered flight round an island in a glider, a paramotor and a light plane, about twenty minutes each, with resistance adding height. Resistance is not yet tested on the bike.",
   "packages": [
     {
       "id": "WP0",
@@ -118,6 +118,14 @@
     {
       "time": "2026-11-11T04:28:00Z",
       "text": "Second environment, Skylift Mesa: scenes are now given the bike's resistance, and here it lifts the bike off the trail and brings on more traffic. Checked on desktop only; resistance on the real bike is still untested."
+    },
+    {
+      "time": "2026-11-11T05:10:00Z",
+      "text": "roadwork-v0.2.0 released: Skylift Mesa, now following a space runner instead of showing the bike."
+    },
+    {
+      "time": "2026-11-11T08:05:00Z",
+      "text": "Third environment, Pedalcraft Island: a pedal glider, paramotor and plane fly in turn between three landing spots round an island, 20 to 24 minutes a leg at a normal pace. Checked on desktop only."
     }
   ]
 }

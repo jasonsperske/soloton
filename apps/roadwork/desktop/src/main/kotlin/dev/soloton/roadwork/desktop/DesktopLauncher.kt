@@ -31,9 +31,10 @@ Ride keys: space pause, left/right pace, R/F raise or lower resistance, N skip, 
                 environment is outlined as the one ridden last
 --list-envs     print each environment's id, title and music folder, then exit
 --view          camera: rider (default, from the saddle) or one of the environment's development
-                cameras (riverfront: jogger-side, jogger-front, jogger-back)
+                cameras (riverfront: jogger-side, jogger-front, jogger-back; pedalcraft-island:
+                overview, craft-side)
 --resistance    the bike's resistance in percent to start with, default 0 (environments that use
-                it, such as skylift-mesa, fly higher and get busier as it rises)
+                it, skylift-mesa and pedalcraft-island, fly higher as it rises)
 
 Music is a silent demo. Set SOLOTON_MUSIC_DIR to a folder holding one sub-folder per game (the
 layout of the tablet's music root) to see real song names and counts; see .env.example."""

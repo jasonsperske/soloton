@@ -66,6 +66,7 @@ Roadwork plays different music in each [environment](ENVIRONMENTS.md). Each envi
 |---|---|
 | Riverfront Roadwork (`riverfront`) | `Mike Tyson's Punch-Out!!` |
 | Skylift Mesa (`skylift-mesa`) | `Space Harrier II` |
+| Pedalcraft Island (`pedalcraft-island`) | `Pilotwings` |
 
 Until you choose otherwise, an environment plays only its default folder; other folders under the root are left alone, so you can copy your whole library once. The default folder's name must match exactly, including capitals, the apostrophe and the `!!`. Files without tags show their file name as the title with a leading track number removed (`01 - Song.mp3`, `1. Song.mp3` and `01_Song.mp3` all show as "Song"), and the folder name as the album.
 
