@@ -93,7 +93,7 @@ fun main(args: Array<String>) {
     }
     val game = RoadworkGame(
         music = music,
-        environment = environment,
+        initialEnvironment = environment,
         startOnPicker = opts.startsOnPicker,
         resistance = AdjustableResistance(opts.resistancePercent / 100f),
         settingsStore = settingsStore,

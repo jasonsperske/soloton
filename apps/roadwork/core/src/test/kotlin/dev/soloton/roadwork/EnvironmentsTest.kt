@@ -315,6 +315,31 @@ class EnvironmentsTest {
     // ---- the game, as far as it goes without OpenGL ----
 
     @Test
+    fun theGearDuringARideOpensTheSettingsOfTheEnvironmentBeingRiddenNotTheOneTheAppOpenedWith() {
+        // The app opens with one environment (the one ridden last) and then another is ridden.
+        val opened = Environments.all[1]
+        val ridden = Environments.all[2]
+        val game = RoadworkGame(music = FakeMusic(log), initialEnvironment = opened, startOnPicker = true)
+        assertNull(game.settingsRequestedFor)
+        assertTrue(game.switchEnvironment(ridden.id))
+        assertSame(ridden, game.environment)
+
+        game.pressSettingsGear()
+        assertSame(ridden, game.settingsRequestedFor, "the gear asked for ${game.settingsRequestedFor?.id}'s settings while riding ${ridden.id}")
+
+        // And it follows every later change.
+        for (next in Environments.all) {
+            game.switchEnvironment(next.id)
+            game.pressSettingsGear()
+            assertSame(next, game.settingsRequestedFor)
+        }
+        // The gear on a card in the picker names its own environment.
+        game.showSettings(opened)
+        assertSame(opened, game.settingsRequestedFor)
+        assertFalse(game.settingsOpen, "nothing is shown before create()")
+    }
+
+    @Test
     fun gameStartsInTheGivenEnvironmentAndRejectsUnknownOrCurrentIds() {
         val changes = ArrayList<String>()
         val game = RoadworkGame(music = FakeMusic(log), onEnvironmentChanged = { changes += it.id })

@@ -77,7 +77,7 @@ class RoadworkActivity : AndroidApplication() {
             manualResistance = keysResistance,
             settingsStore = settingsStore,
             actions = actions,
-            environment = environment,
+            initialEnvironment = environment,
             startOnPicker = requested == null,
             // Called on the render thread when a ride starts; apply() is safe from any thread.
             onEnvironmentChanged = {
