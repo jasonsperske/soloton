@@ -107,8 +107,8 @@ Done when: unit tests cover the scan, shuffle-without-repeat, and the failure ca
 Owns `apps/roadwork/android`. Wires the scene, music, immersive mode, icon, and app label. Runs on an API 24 emulator in CI (boot, launch, screenshot, no crash for 60 s). Verified on the gen 1 emulator profile (see WP0).
 Done when: the CI-built APK installs and runs on API 24, the skip button changes tracks, and changing the music folder in settings takes effect without restarting.
 
-### WP6 Bike cadence as pace (parked)
-Research is in `docs/BIKE_SENSORS.md`. A cadence `PaceSource` cannot be tested without the real bike's sensor service, so it is parked until the owner asks for it.
+### WP6 Bike cadence as pace (operational)
+Research is in `docs/BIKE_SENSORS.md`; the code is `libs/bike`, and Roadwork takes its pace from cadence with the buttons as fallback. The owner reported on 2026-11-10 that the sensor data works on the real bike. Resistance has not been tested there, and which route connected and whether the units match are not yet recorded.
 
 ## Order of work
 
@@ -116,12 +116,14 @@ Research is in `docs/BIKE_SENSORS.md`. A cadence `PaceSource` cannot be tested w
 WP1 ──┬── WP2
       ├── WP3 ──┐
       └── WP4 ──┴── WP5
-WP0 (spec + gen 1 emulator)      WP6 (parked)
+WP0 (spec + gen 1 emulator)      WP6 (operational)
 ```
 
 Wave 1: WP1 alone. Wave 2: WP2, WP3, WP4 in parallel, each in its own worktree. Wave 3: WP5. All done; the MVP runs on the gen 1 emulator.
 
 Next: more Roadwork levels, from the owner's designs.
+
+Idea from the owner (2026-11-10): use resistance as a difficulty setting in some environments. It depends on resistance reading on the real bike as the other sensor data does, which is untested; check the knob end to end on the diagnostics screen first (`libs/bike/README.md`).
 
 ## Rules for every agent
 
@@ -133,4 +135,4 @@ Next: more Roadwork levels, from the owner's designs.
 ## Open decisions for the user
 
 1. **App name.** `roadwork` is a working name.
-2. **Signing secrets.** Steps are in `docs/CI_SETUP.md`. No Google Play account or Play credentials are involved.
+2. **Signing secrets.** Done: set on 2026-11-10, and `roadwork-v0.1.0` is signed with the release key. Steps are in `docs/CI_SETUP.md`.

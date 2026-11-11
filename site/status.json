@@ -1,7 +1,7 @@
 {
   "repo": "jasonsperske/soloton",
-  "updated": "2026-11-10T22:46:58Z",
-  "summary": "Scene reworked: you ride the bike along a sunny riverfront behind a jogger. Runs on the gen 1 emulator; the latest APK has it. Ready for more levels.",
+  "updated": "2026-11-11T02:20:00Z",
+  "summary": "Roadwork 0.1.0 is released and signed with the release key. The owner reports the bike's sensor data works on the real bike. Next idea: resistance as a difficulty setting in some environments, once it is tested.",
   "packages": [
     {
       "id": "WP0",
@@ -19,7 +19,7 @@
       "id": "WP2",
       "title": "CI and releases",
       "status": "done",
-      "note": "CI builds every app on each push; main refreshes a rolling 'latest' release; tags like roadwork-v0.1.0 make releases. Debug-signed until the signing secrets are added."
+      "note": "CI builds every app on each push; main refreshes a rolling 'latest' release; tags like roadwork-v0.1.0 make releases. Signed with the release key since roadwork-v0.1.0."
     },
     {
       "id": "WP3",
@@ -42,8 +42,8 @@
     {
       "id": "WP6",
       "title": "Bike cadence as pace",
-      "status": "skipped",
-      "note": "Parked. Research is in docs/BIKE_SENSORS.md; code needs the real bike's sensor service."
+      "status": "done",
+      "note": "Operational: the owner reports live sensor data works on the real bike (2026-11-10). libs/bike reads cadence, power and resistance; Roadwork takes its pace from cadence. Resistance is untested on the bike; which route connected and the units are not yet recorded."
     }
   ],
   "log": [
@@ -102,6 +102,14 @@
     {
       "time": "2026-11-10T22:46:58Z",
       "text": "Riverfront rider scene merged and verified on the gen 1 emulator."
+    },
+    {
+      "time": "2026-11-11T02:05:00Z",
+      "text": "Signing secrets added; roadwork-v0.1.0 released, signed with the release key."
+    },
+    {
+      "time": "2026-11-11T02:20:00Z",
+      "text": "Owner reports the bike's sensor data works on the real bike. WP6 recorded as operational. Resistance not tested yet; if it reads the same way it could become a difficulty setting in some environments."
     }
   ]
 }

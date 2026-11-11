@@ -8,13 +8,13 @@ Not affiliated with or endorsed by Peloton. Sideloading is at your own risk.
 
 ## Status
 
-The first app, `roadwork`, is complete and runs on an emulator shaped like the gen 1 tablet (Android 7.0, 1920x1080). Every push builds an APK and publishes it to the [`latest` release](../../releases/tag/latest). Progress, screenshots and downloads are on the [progress site](https://jasonsperske.github.io/soloton/). It has not yet been measured on a real bike.
+The first app, `roadwork`, is complete and runs on an emulator shaped like the gen 1 tablet (Android 7.0, 1920x1080). Every push builds an APK and publishes it to the [`latest` release](../../releases/tag/latest). Progress, screenshots and downloads are on the [progress site](https://jasonsperske.github.io/soloton/). The owner reports that the bike's sensor data works on the real bike (2026-11-10); resistance is not tested there yet.
 
 ## Apps
 
 | App | What it is | Status |
 |---|---|---|
-| `roadwork` | First-person bike ride through an [environment](docs/ENVIRONMENTS.md): a 3D scene paired with music you choose for it from the folders on the tablet, shuffled. It opens on a picker of environments. The first is a sunny city riverfront, pacing a jogger out on their roadwork | Working on the gen 1 emulator |
+| `roadwork` | First-person bike ride through an [environment](docs/ENVIRONMENTS.md): a 3D scene paired with music you choose for it from the folders on the tablet, shuffled. It opens on a picker of environments. The first is a sunny city riverfront, pacing a jogger out on their roadwork | Working on the gen 1 emulator; bike sensor data reported working on the owner's bike |
 
 ## Using it
 
