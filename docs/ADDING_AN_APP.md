@@ -49,6 +49,8 @@ Versions come only from `gradle/libs.versions.toml`.
    }
    ```
 
+   To read the bike, add `implementation(project(":libs:bike"))` here and `api(project(":libs:bike-core"))` to `core`, and write the game against `PaceSource` and `ResistanceSource` ([libs/bike/README.md](../libs/bike/README.md)).
+
    Add `src/main/AndroidManifest.xml` (copy `apps/roadwork/android`'s: GLES 2.0 feature, `sensorLandscape`, fullscreen theme) and `res/values/strings.xml` with `app_name`. In the Activity, call `applyBikeScreen()` in `onCreate` and `reapplyImmersive()` when focus returns (from `dev.soloton.platform`). For a non-libGDX screen, extend `BikeActivity` instead.
 
 4. `apps/climb/desktop/build.gradle.kts`:

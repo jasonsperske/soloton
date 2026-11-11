@@ -2,6 +2,7 @@
 package dev.soloton.bike
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -18,11 +19,11 @@ import android.provider.Settings
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
+import android.view.WindowManager
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
-import dev.soloton.platform.BikeActivity
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -37,9 +38,10 @@ import java.util.Locale
  * Start it from any app that includes this library:
  * `adb shell am start -n <application id>/dev.soloton.bike.BikeDiagnosticsActivity`
  *
- * It runs its own [BikeSensors] while visible and reads nothing from the starting intent.
+ * It runs its own [BikeSensors] while visible and reads nothing from the starting intent. It is a
+ * plain Activity that keeps the screen on and fills it, so it needs nothing from the app it is in.
  */
-class BikeDiagnosticsActivity : BikeActivity() {
+class BikeDiagnosticsActivity : Activity() {
     private lateinit var sensors: BikeSensors
     private val pace = CadencePace()
     private val feed = object : BikeSensors.Listener {
@@ -70,12 +72,36 @@ class BikeDiagnosticsActivity : BikeActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        fillScreen()
         val endpoints = endpointsForTest ?: BikeEndpoints()
         sensors = BikeSensors(applicationContext, endpoints, timingForTest ?: LinkTiming())
         sensors.addListener(feed)
         setContentView(buildUi())
         inventory = BikeInventory.describe(this, endpoints)
         packagesView.text = inventory.joinToString("\n")
+    }
+
+    /** Hides the status and navigation bars. Android shows them again when focus is lost, hence the two callers below. */
+    @Suppress("DEPRECATION") // The bike's tablet is API 24, which has no WindowInsetsController.
+    private fun fillScreen() {
+        window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
+        window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
+            View.SYSTEM_UI_FLAG_FULLSCREEN or
+            View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+            View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
+            View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
+            View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+    }
+
+    override fun onResume() {
+        super.onResume()
+        fillScreen()
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) fillScreen()
     }
 
     override fun onStart() {

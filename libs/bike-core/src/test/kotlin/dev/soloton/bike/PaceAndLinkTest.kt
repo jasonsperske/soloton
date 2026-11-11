@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 package dev.soloton.bike
 
-import dev.soloton.api.PaceSource
 import kotlin.math.exp
 import kotlin.test.Test
 import kotlin.test.assertEquals

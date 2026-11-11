@@ -1,6 +1,6 @@
 package dev.soloton.roadwork
 
-import dev.soloton.api.ResistanceSource
+import dev.soloton.bike.ResistanceSource
 import kotlin.math.roundToInt
 
 /**

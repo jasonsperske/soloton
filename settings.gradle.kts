@@ -21,6 +21,9 @@ rootProject.name = "soloton"
 include(":libs:api")
 include(":libs:platform")
 include(":libs:music")
+// The bike library, in two halves so it can be used outside this repository: bike-core is pure
+// Kotlin, bike is the Android part. Neither depends on any other module here.
+include(":libs:bike-core")
 include(":libs:bike")
 
 // Apps: each app is apps/<name>/{core,android,desktop}

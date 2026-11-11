@@ -33,7 +33,7 @@ The first app, `roadwork`, is complete and runs on an emulator shaped like the g
 - [docs/CI_SETUP.md](docs/CI_SETUP.md): CI, signing, and releases
 - [docs/INSTALL.md](docs/INSTALL.md): installing on the bike and copying music
 - [docs/DEVICE.md](docs/DEVICE.md): the gen 1 tablet spec and its emulator
-- [docs/BIKE_SENSORS.md](docs/BIKE_SENSORS.md) and [libs/bike/README.md](libs/bike/README.md): reading cadence, power and resistance from the bike, and how to verify it on a real one
+- [docs/BIKE_SENSORS.md](docs/BIKE_SENSORS.md) and [libs/bike/README.md](libs/bike/README.md): reading cadence, power and resistance from the bike, how to verify it on a real one, and how to use the bike library in another game
 
 ## License
 

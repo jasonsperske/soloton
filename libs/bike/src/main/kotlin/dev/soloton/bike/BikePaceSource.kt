@@ -2,8 +2,6 @@
 package dev.soloton.bike
 
 import android.content.Context
-import dev.soloton.api.PaceSource
-import dev.soloton.api.ResistanceSource
 
 /**
  * The runner's pace from the bike's cadence: [BikeSensors] feeding a [CadencePace].

@@ -1,6 +1,13 @@
-# libs/bike: read the bike's sensors
+# The bike library: read the bike's sensors
 
-Reads live cadence (rpm), power (watts) and resistance (0 to 100) from the sensor service that Peloton's own software runs on the original Bike's tablet, and turns cadence into a `PaceSource` for games.
+Reads live cadence (rpm), power (watts) and resistance (0 to 100) from the sensor service that Peloton's own software runs on the original Bike's tablet, and turns them into the pace and resistance a game reads.
+
+It is a library in its own right, in two modules that depend on nothing else in this repository, so another game can take it as it is ([Use it in another game](#use-it-in-another-game)). It is free software under GPL-3.0-only ([what that means for a game that uses it](#credits-and-licence)).
+
+| Module | Artifact | What it is |
+|---|---|---|
+| `libs/bike-core` | `dev.soloton:bike-core` | Pure Kotlin, no Android: a reading, the two services' wire formats, the connection state machine, the cadence-to-pace and resistance mapping, and the `PaceSource` and `ResistanceSource` interfaces a game is written against. Needs only the Kotlin standard library |
+| `libs/bike` | `dev.soloton:bike-android` | Android: binds the services (`BikeSensors`), hands a game its pace and resistance (`BikePaceSource`), and carries the diagnostics screen. Needs only `bike-core` |
 
 **Status: operational on the owner's bike.** The owner reported on 2026-11-10 that live sensor data works on the real bike. Resistance has not been tested there, and which route connected and whether the units match are not yet recorded. The automated tests run against stand-in services written from public descriptions of the protocol. See "Check it on a real bike" below, and [docs/BIKE_SENSORS.md](../../docs/BIKE_SENSORS.md) for the evidence.
 
@@ -28,9 +35,29 @@ Two details worth knowing:
 - Resistance is reported as the lowest of the last three samples, because the sensor is known to spike for a single sample. A real increase therefore shows two samples late. `BikeSensors(context, filterResistance = false)` turns this off.
 - On route B, if the board never answers the "resistance, already normalised" read, the library reads the raw resistance count instead and converts it with the 31-entry calibration table stored on the bike, as the tablet's own software does. Until that table is loaded, resistance reads 0.
 
-## Use it in an app
+## Use it in another game
 
-Add `implementation(project(":libs:bike"))` to the app's Android module, then:
+Write the game against `PaceSource` and `ResistanceSource` from `bike-core`. They are the whole of what a game needs to know about the bike, they are plain interfaces, and anything can stand in for them: on-screen buttons, a keyboard, a test. The game's platform-free code depends on `bike-core` only; the Android launcher adds `bike-android` and supplies the real thing.
+
+**Getting the library.** There is no published Maven repository yet. Either:
+
+- **Build it into your local Maven repository.** In a checkout of this repository:
+
+  ```sh
+  ./gradlew :libs:bike-core:publishToMavenLocal :libs:bike:publishToMavenLocal
+  ```
+
+  then in the other project add `mavenLocal()` to its repositories and:
+
+  ```kotlin
+  implementation("dev.soloton:bike-core:0.1.0")      // game code, any JVM module
+  implementation("dev.soloton:bike-android:0.1.0")   // the Android app module; brings bike-core with it
+  ```
+
+  `-PbikeLibraryVersion=1.2.3` on the publish command sets another version. Sources are published alongside.
+- **Copy the two directories** `libs/bike-core` and `libs/bike` into the other project. Their build files use this repository's convention plugins (`soloton.kotlin.jvm`, `soloton.android.library`); replace those two lines with `kotlin("jvm")` and `com.android.library` plus your own SDK levels. The minimum is Android 7.0 (API 24), the bike's tablet.
+
+**In the Android launcher:**
 
 ```kotlin
 val bike = BikePaceSource(applicationContext)        // in onCreate
@@ -71,20 +98,27 @@ Send back that file, and say whether the numbers in steps 2 to 5 looked right. I
 
 ## Layout
 
-- `BikeReading.kt`, `AffernetWire.kt`, `SensorDataWire.kt`, `CadencePace.kt`, `BikeLink.kt`, `BikeDiagnostics.kt`: pure Kotlin, no Android imports. Wire layouts and unit conversion, validation, the resistance table, the pace mapping, the connection state machine and the report text. Unit tested on the JVM (`src/test`).
-- `BikeSensors.kt`, `Transports.kt`, `BikePaceSource.kt`, `BikeDiagnosticsActivity.kt`: the Android layer.
-- `src/androidTest`: stand-ins for both Peloton services, in a separate process and speaking the same Binder and Messenger protocols, and the tests that run the client against them. They are in the test APK only.
+- `libs/bike-core`: `Inputs.kt` (`PaceSource`, `ResistanceSource`), `BikeReading.kt`, `AffernetWire.kt`, `SensorDataWire.kt`, `CadencePace.kt`, `BikeResistance.kt`, `BikeLink.kt`, `BikeDiagnostics.kt`. Pure Kotlin, no Android imports: wire layouts and unit conversion, validation, the resistance table, the pace and resistance mapping, the connection state machine and the report text. Unit tested on the JVM (`src/test`).
+- `libs/bike`: `BikeSensors.kt`, `Transports.kt`, `BikePaceSource.kt`, `BikeDiagnosticsActivity.kt`. The Android layer. The diagnostics screen is a plain Activity that sets up its own fullscreen display, so it needs nothing from the app it is in.
+- `libs/bike/src/androidTest`: stand-ins for both Peloton services, in a separate process and speaking the same Binder and Messenger protocols, and the tests that run the client against them. They are in the test APK only.
 
 ```sh
-./gradlew :libs:bike:check                       # JVM tests and lint
+./gradlew :libs:bike-core:check                  # JVM tests
+./gradlew :libs:bike:check                       # lint
 ./gradlew :libs:bike:connectedDebugAndroidTest   # needs an emulator or device
 ```
+
+Neither module may depend on another module of this repository; that is what lets it be used elsewhere. `./gradlew :libs:bike:dependencies --configuration releaseRuntimeClasspath` should list `bike-core` and the Kotlin standard library and nothing else.
 
 The instrumented tests prove the client and the stand-ins agree, and that the client copes when a service is missing, silent, wrong or killed. Both sides were written from the same public descriptions, so the tests cannot show that those descriptions match a real bike.
 
 ## Credits and licence
 
-This library is GPL-3.0-only, like the rest of the repository. It contains no code from Peloton and none copied from the projects below; it was written from the protocol facts they document.
+Both modules are free software under the GNU General Public License, version 3 only (`GPL-3.0-only`), like the rest of the repository: see [LICENSE](../../LICENSE). Every source file carries the SPDX identifier, the published `bike-core` jar carries the licence text in `META-INF/LICENSE`, and both artifacts name the licence in their Maven metadata.
+
+For a game that uses the library, that means the GPL's terms reach the game: if you distribute an app that includes it, the app as a whole has to be offered under GPL-3.0, with its source. Using it privately, on your own bike, asks nothing of you. This is a summary, not legal advice; the licence text is what counts.
+
+It contains no code from Peloton and none copied from the projects below; it was written from the protocol facts they document.
 
 - **PeloMon** by Imran S. Haque ([repository](https://github.com/ihaque/pelomon), [write-up](https://ihaque.org/tag/pelomon.html)): the serial protocol between tablet and bike, on which all of this rests. Packet framing, the additive checksum, digits sent least significant first, the cadence, power and raw-resistance commands, power in tenths of a watt, and the 31-entry resistance table with linear interpolation. The repository's licence file is GPL-3.0, but the firmware sources that hold the decoder and the table code say CC BY-NC 4.0 in their headers, so nothing was ported from them: the interpolation here is written from the description.
 - **Grupetto** ([selalipop/grupetto](https://github.com/selalipop/grupetto)) and its maintained fork ([doudar/grupetto](https://github.com/doudar/grupetto)): the protocol reference for both tablet services. Service and interface names, transaction codes, the order of fields in `BikeData`, the Messenger message numbers and Bundle keys, and the resistance spike. Neither repository has a licence, so only facts were taken.

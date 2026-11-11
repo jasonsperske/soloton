@@ -1,6 +1,6 @@
 # Bike sensors: reading cadence, power and resistance from a sideloaded app
 
-**Where this stands.** `libs/bike` implements both routes below. **The owner reported on 2026-11-10 that live sensor data works on their bike.** That report is all that is recorded: which route connected, the sample rate and whether the units match are not written down, because no diagnostics report has been saved, and resistance has not been tested on the bike. The automated tests still run only against stand-in services on an API 24 emulator. Every published observation by others comes from original-Bike tablets on Android 10 or 11.
+**Where this stands.** The bike library (`libs/bike-core` and `libs/bike`, usable outside this repository: see [libs/bike/README.md](../libs/bike/README.md)) implements both routes below. **The owner reported on 2026-11-10 that live sensor data works on their bike.** That report is all that is recorded: which route connected, the sample rate and whether the units match are not written down, because no diagnostics report has been saved, and resistance has not been tested on the bike. The automated tests still run only against stand-in services on an API 24 emulator. Every published observation by others comes from original-Bike tablets on Android 10 or 11.
 
 | Claim | Evidence |
 |---|---|

@@ -9,7 +9,6 @@ import android.widget.Button
 import android.widget.TextView
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import dev.soloton.api.PaceSource
 import dev.soloton.bike.fake.FakeScript
 import dev.soloton.bike.fake.FakeStatus
 import org.junit.After
