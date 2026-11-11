@@ -14,6 +14,7 @@ dependencies {
     implementation(project(":apps:roadwork:core"))
     implementation(project(":libs:platform"))
     implementation(project(":libs:music"))
+    implementation(project(":libs:bike"))
 
     // Smoke test: ./gradlew :apps:roadwork:android:connectedDebugAndroidTest
     androidTestImplementation(libs.androidx.test.runner)

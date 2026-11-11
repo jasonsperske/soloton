@@ -34,6 +34,11 @@ import dev.soloton.api.SilentMusicController
  * @param startOnPicker open on the picker instead of going straight to a ride
  * @param onEnvironmentChanged called on the render thread whenever a ride starts or changes
  *   environment, so a launcher can remember the choice
+ * @param manualPace the pace the slower/faster buttons adjust, if any. Defaults to [pace] when that is
+ *   an [AdjustablePace]. Pass it separately when [pace] wraps it, for example a bike sensor source
+ *   that falls back to the buttons.
+ * @param manualPaceActive whether [manualPace] is what currently drives the ride. Polled every frame;
+ *   the buttons are hidden while it is false (the bike's own cadence is setting the pace).
  */
 class RoadworkGame(
     private val music: MusicController = SilentMusicController(),
@@ -43,6 +48,8 @@ class RoadworkGame(
     environment: Environment = Environments.default,
     startOnPicker: Boolean = false,
     private val onEnvironmentChanged: (Environment) -> Unit = {},
+    private val manualPace: AdjustablePace? = pace as? AdjustablePace,
+    private val manualPaceActive: () -> Boolean = { true },
 ) : ApplicationAdapter() {
     private val stage = object : AppFlow.Stage {
         override fun pickerShown(highlight: Environment) {
@@ -97,8 +104,8 @@ class RoadworkGame(
     private var created = false
 
     private val hudListener = object : Hud.Listener {
-        override fun onSlower() { (pace as? AdjustablePace)?.slower() }
-        override fun onFaster() { (pace as? AdjustablePace)?.faster() }
+        override fun onSlower() { manualPace?.slower() }
+        override fun onFaster() { manualPace?.faster() }
         // With nothing to skip, the button tries again (start() retries after a problem), so music
         // comes back once the folder has been copied over, without leaving the ride.
         override fun onSkip() { if (music.state is MusicState.Problem) music.start() else music.skip() }
@@ -117,7 +124,7 @@ class RoadworkGame(
         riderBike.create()
         hud = Hud(hudListener)
         hud.create()
-        hud.setPaceAdjustable(pace is AdjustablePace)
+        hud.setPaceAdjustable(manualPace != null && manualPaceActive())
         picker = Picker(Environments.all, music, seed, pickerListener)
         picker.create()
         // Back comes to the input processor instead of closing the app: the ride returns to the picker.
@@ -243,6 +250,7 @@ class RoadworkGame(
         gl.glDisable(GL20.GL_DEPTH_TEST)
         gl.glDisable(GL20.GL_CULL_FACE)
 
+        hud.setPaceAdjustable(manualPace != null && manualPaceActive())
         hud.draw(ride.elapsedSeconds, ride.distanceMeters, ride.speed, music.state, paused)
     }
 

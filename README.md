@@ -32,11 +32,12 @@ The first app, `roadwork`, is complete and runs on an emulator shaped like the g
 - [docs/CI_SETUP.md](docs/CI_SETUP.md): CI, signing, and releases
 - [docs/INSTALL.md](docs/INSTALL.md): installing on the bike and copying music
 - [docs/DEVICE.md](docs/DEVICE.md): the gen 1 tablet spec and its emulator
+- [docs/BIKE_SENSORS.md](docs/BIKE_SENSORS.md) and [libs/bike/README.md](libs/bike/README.md): reading cadence, power and resistance from the bike, and how to verify it on a real one
 
 ## License
 
 Copyright (C) 2026 Soloton contributors.
 
-Soloton is free software under the [GNU General Public License, version 3](LICENSE) (`GPL-3.0-only`), the same licence as [PeloMon](https://github.com/ihaque/pelomon), whose work decoding the Peloton Bike's sensor communications this project builds on. You may use, change and share it under those terms; anything you distribute that includes it must be released under the same licence, with source. It comes with no warranty.
+Soloton is free software under the [GNU General Public License, version 3](LICENSE) (`GPL-3.0-only`), the licence of the [PeloMon](https://github.com/ihaque/pelomon) repository, whose work decoding the Peloton Bike's sensor communications this project builds on. (PeloMon's firmware files carry their own CC-BY-NC 4.0 headers; Soloton uses PeloMon's published protocol facts and contains none of its code.) You may use, change and share it under those terms; anything you distribute that includes it must be released under the same licence, with source. It comes with no warranty.
 
 Versions of this repository up to and including commit `0c23c35` were published under the MIT licence, and stay available under it.

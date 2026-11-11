@@ -8,10 +8,12 @@ import com.badlogic.gdx.backends.android.AndroidApplication
 import com.badlogic.gdx.backends.android.AndroidApplicationConfiguration
 import dev.soloton.api.PlatformActions
 import dev.soloton.api.PlaylistRef
+import dev.soloton.bike.BikePaceSource
 import dev.soloton.music.FolderMusicController
 import dev.soloton.music.MusicSettingsActivity
 import dev.soloton.platform.applyBikeScreen
 import dev.soloton.platform.reapplyImmersive
+import dev.soloton.roadwork.AdjustablePace
 import dev.soloton.roadwork.Environments
 import dev.soloton.roadwork.RoadworkGame
 
@@ -35,12 +37,16 @@ import dev.soloton.roadwork.RoadworkGame
  */
 class RoadworkActivity : AndroidApplication() {
     private lateinit var music: FolderMusicController
+    /** Pace from the bike's own cadence when its sensor service answers; otherwise the on-screen buttons. */
+    private lateinit var bike: BikePaceSource
     private lateinit var game: RoadworkGame
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         applyBikeScreen()
         music = FolderMusicController(this).also { it.attachTo(this) }
+        bike = BikePaceSource(applicationContext)
+        val buttonsPace = AdjustablePace()
         val actions = object : PlatformActions {
             // Called from the render thread; startActivity belongs on the UI thread.
             override fun openMusicSettings(playlist: PlaylistRef) = runOnUiThread {
@@ -54,6 +60,9 @@ class RoadworkActivity : AndroidApplication() {
         Log.i(TAG, if (requested != null) "Riding ${environment.id}" else "Picker, last environment ${environment.id}")
         game = RoadworkGame(
             music = music,
+            pace = bike.orElse(buttonsPace),
+            manualPace = buttonsPace,
+            manualPaceActive = { !bike.isLive },
             actions = actions,
             environment = environment,
             startOnPicker = requested == null,
@@ -85,6 +94,12 @@ class RoadworkActivity : AndroidApplication() {
     override fun onResume() {
         super.onResume()
         reapplyImmersive()
+        bike.start()
+    }
+
+    override fun onPause() {
+        bike.stop()
+        super.onPause()
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
