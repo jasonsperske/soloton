@@ -104,7 +104,7 @@ To skip the picker and ride an environment at once:
   adb shell am start -n dev.soloton.roadwork/.android.RoadworkActivity --es environment riverfront
   ```
 
-- In code: `RoadworkGame(environment = ...)` rides at once; `RoadworkGame(environment = lastRidden, startOnPicker = true)` opens the picker. On the render thread, `ride(environment)` and `showPicker()` move between the two, and `switchEnvironment(id)` changes the scenery of a ride in progress, keeping the ride (elapsed time, distance, pace and pause).
+- In code: `RoadworkGame(initialEnvironment = ...)` rides at once; `RoadworkGame(initialEnvironment = lastRidden, startOnPicker = true)` opens the picker. On the render thread, `ride(environment)` and `showPicker()` move between the two, and `switchEnvironment(id)` changes the scenery of a ride in progress, keeping the ride (elapsed time, distance, pace and pause).
 
 ## Music for an environment
 

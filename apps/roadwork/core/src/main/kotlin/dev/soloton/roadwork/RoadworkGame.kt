@@ -38,7 +38,10 @@ import dev.soloton.api.SilentMusicController
  *
  * Draw order per ride frame: the scene; the rider's handlebars (fresh depth, eye-space camera); the HUD.
  *
- * @param environment the environment to ride, or with [startOnPicker] the one to outline as last ridden
+ * @param initialEnvironment the environment to ride, or with [startOnPicker] the one to outline as last
+ *   ridden. Deliberately not called `environment`: inside this class that name must always mean the
+ *   property, the environment being ridden now, and a constructor parameter of the same name would
+ *   quietly take its place in the listeners below.
  * @param startOnPicker open on the picker instead of going straight to a ride
  * @param onEnvironmentChanged called on the render thread whenever a ride starts or changes
  *   environment, so a launcher can remember the choice
@@ -51,14 +54,14 @@ import dev.soloton.api.SilentMusicController
  * @param manualResistance the resistance the R (raise) and F (lower) keys adjust, if any. Defaults to
  *   [resistance] when that is an [AdjustableResistance]; pass it separately when [resistance] wraps it.
  * @param settingsStore where each environment's settings are kept between runs
- * @param openSettingsAtStart open on [environment]'s settings screen (for development screenshots)
+ * @param openSettingsAtStart open on [initialEnvironment]'s settings screen (for development screenshots)
  */
 class RoadworkGame(
     private val music: MusicController = SilentMusicController(),
     private val pace: PaceSource = AdjustablePace(),
     private val actions: PlatformActions = NoPlatformActions,
     private val seed: Long = DEFAULT_SEED,
-    environment: Environment = Environments.default,
+    initialEnvironment: Environment = Environments.default,
     startOnPicker: Boolean = false,
     private val onEnvironmentChanged: (Environment) -> Unit = {},
     private val manualPace: AdjustablePace? = pace as? AdjustablePace,
@@ -90,7 +93,7 @@ class RoadworkGame(
         music = music,
         initialSpeed = { pace.metersPerSecond },
         seed = seed,
-        initial = environment,
+        initial = initialEnvironment,
         startOnPicker = startOnPicker,
         stage = stage,
         onRideStarted = { next ->
@@ -103,7 +106,7 @@ class RoadworkGame(
 
     /** The environment being ridden (on the picker: the one ridden last). Safe to read from any thread. */
     @Volatile
-    var environment: Environment = environment
+    var environment: Environment = initialEnvironment
         private set
 
     /** Which screen is showing; null before [create]. Safe to read from any thread. */
@@ -128,6 +131,10 @@ class RoadworkGame(
     /** Whether the ride was already paused when the settings were opened over it, so closing them leaves it as it was. */
     private var pausedBeforeSettings = false
 
+    /** The environment whose settings were last asked for, by either gear; null until one is. */
+    var settingsRequestedFor: Environment? = null
+        private set
+
     /** True while an environment's settings screen is showing. Safe to read from any thread. */
     @Volatile
     var settingsOpen = false
@@ -140,6 +147,7 @@ class RoadworkGame(
         // comes back once the folder has been copied over, without leaving the ride.
         override fun onSkip() { if (music.state is MusicState.Problem) music.start() else music.skip() }
         override fun onTogglePause() { setPaused(!paused) }
+        // The environment being ridden now, which is not necessarily the one the app opened with.
         override fun onSettings() { showSettings(environment) }
         override fun onEnvironments() { showPicker() }
         override fun onResistanceUp() { manualResistance?.raise() }
@@ -214,6 +222,7 @@ class RoadworkGame(
      * until they are closed. Render thread only.
      */
     fun showSettings(of: Environment) {
+        settingsRequestedFor = of
         if (!created) return
         if (!settingsOpen) {
             pausedBeforeSettings = paused
@@ -223,6 +232,9 @@ class RoadworkGame(
         settingsOpen = true
         Gdx.input.inputProcessor = settingsScreen
     }
+
+    /** What the gear on the HUD does during a ride: opens the settings of the environment being ridden. */
+    internal fun pressSettingsGear() = hudListener.onSettings()
 
     /** Closes the settings, back to the picker or to the ride as it was. Does nothing if they are not open. */
     fun closeSettings() {
