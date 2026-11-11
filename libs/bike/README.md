@@ -2,7 +2,7 @@
 
 Reads live cadence (rpm), power (watts) and resistance (0 to 100) from the sensor service that Peloton's own software runs on the original Bike's tablet, and turns cadence into a `PaceSource` for games.
 
-**Status: not yet tried on a real bike.** Everything here is tested against stand-in services written from public descriptions of the protocol. Nobody has published a reading from Android 7.0 firmware, which is what the owner's bike runs. See "Check it on a real bike" below, and [docs/BIKE_SENSORS.md](../../docs/BIKE_SENSORS.md) for the evidence.
+**Status: operational on the owner's bike.** The owner reported on 2026-11-10 that live sensor data works on the real bike. Resistance has not been tested there, and which route connected and whether the units match are not yet recorded. The automated tests run against stand-in services written from public descriptions of the protocol. See "Check it on a real bike" below, and [docs/BIKE_SENSORS.md](../../docs/BIKE_SENSORS.md) for the evidence.
 
 ## What it does
 

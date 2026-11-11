@@ -1,6 +1,6 @@
 # Bike sensors: reading cadence, power and resistance from a sideloaded app
 
-**Where this stands.** `libs/bike` implements both routes below. It has been tested only against stand-in services on an API 24 emulator. **Nothing here has been verified on a real bike, and nothing has been verified on Android 7.0 firmware by anyone:** every published observation comes from original-Bike tablets on Android 10 or 11. Which service the owner's tablet has, and whether it lets an ordinary app bind, is unknown until the steps at the end are run.
+**Where this stands.** `libs/bike` implements both routes below. **The owner reported on 2026-11-10 that live sensor data works on their bike.** That report is all that is recorded: which route connected, the sample rate and whether the units match are not written down, because no diagnostics report has been saved, and resistance has not been tested on the bike. The automated tests still run only against stand-in services on an API 24 emulator. Every published observation by others comes from original-Bike tablets on Android 10 or 11.
 
 | Claim | Evidence |
 |---|---|
@@ -9,7 +9,7 @@
 | Route B polled reads | Grupetto fork ran it once on a real bike (2026-10-18), stationary, after stopping Affernet |
 | Route B repeating commands | Grupetto's original 2022 reader; no published capture |
 | Our client decodes all of the above correctly | Our JVM tests, plus instrumented tests against our own stand-ins. Not a real bike |
-| Any of it on Android 7.0 | None |
+| Any of it on the owner's bike | Owner's report, 2026-11-10: live sensor data works. Route, units and resistance not recorded |
 
 ## The protocol underneath: tablet to bike over serial
 
@@ -88,7 +88,7 @@ Soloton is GPL-3.0-only.
 
 ## Verify on the owner's bike
 
-Nothing below has been run. Steps 1 to 3 need an app that includes `libs/bike` installed on the bike (for Roadwork, application id `dev.soloton.roadwork`).
+The owner has seen live sensor data on the bike (2026-11-10), but no report from these steps has been saved, so the questions at the end are still open, resistance included. Steps 1 to 3 need an app that includes `libs/bike` installed on the bike (for Roadwork, application id `dev.soloton.roadwork`).
 
 1. Open the diagnostics screen:
    ```sh
