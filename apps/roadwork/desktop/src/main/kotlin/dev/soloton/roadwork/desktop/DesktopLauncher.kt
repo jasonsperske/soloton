@@ -32,7 +32,7 @@ Ride keys: space pause, left/right pace, R/F raise or lower resistance, N skip, 
 --list-envs     print each environment's id, title and music folder, then exit
 --view          camera: rider (default, from the saddle) or one of the environment's development
                 cameras (riverfront: jogger-side, jogger-front, jogger-back; pedalcraft-island:
-                overview, craft-side)
+                overview, craft-side; night-streets: overhead)
 --resistance    the bike's resistance in percent to start with, default 0 (environments that use
                 it, skylift-mesa and pedalcraft-island, fly higher as it rises)
 

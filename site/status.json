@@ -1,7 +1,7 @@
 {
   "repo": "jasonsperske/soloton",
-  "updated": "2026-11-11T08:05:00Z",
-  "summary": "Roadwork 0.2.0 is released with a second environment, Skylift Mesa. A third, Pedalcraft Island, is pedal-powered flight round an island in a glider, a paramotor and a light plane, about twenty minutes each, with resistance adding height. Resistance is not yet tested on the bike.",
+  "updated": "2026-11-11T11:30:00Z",
+  "summary": "Roadwork 0.3.0 is released with three environments. A fourth, Night Streets, is a ride through an endless city at night, turning at random at the junctions, with cars that obey the lights and give way to the rider. Resistance is not yet tested on the bike.",
   "packages": [
     {
       "id": "WP0",
@@ -126,6 +126,14 @@
     {
       "time": "2026-11-11T08:05:00Z",
       "text": "Third environment, Pedalcraft Island: a pedal glider, paramotor and plane fly in turn between three landing spots round an island, 20 to 24 minutes a leg at a normal pace. Checked on desktop only."
+    },
+    {
+      "time": "2026-11-11T08:30:00Z",
+      "text": "roadwork-v0.3.0 released: Pedalcraft Island."
+    },
+    {
+      "time": "2026-11-11T11:30:00Z",
+      "text": "Fourth environment, Night Streets: an endless night city built block by block, a random route through its junctions, and thirty cars with traffic lights. Checked on desktop only."
     }
   ]
 }
