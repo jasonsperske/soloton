@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-2.0-or-later -->
 <!--
     Test APK only. Stand-ins for the two Peloton sensor services, run in their own process so the
     client talks to them through real Binder transactions and so that process can be killed.

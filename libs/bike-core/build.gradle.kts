@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-only
+// SPDX-License-Identifier: GPL-2.0-or-later
 // The platform-free half of the bike library: what the bike's sensor services say and what it
 // means. Readings, the two services' wire formats, the connection state machine, and the mapping
 // from cadence and resistance to the PaceSource and ResistanceSource a game reads. Pure Kotlin, no
@@ -17,9 +17,9 @@ java {
     withSourcesJar()
 }
 
-// The licence travels with the jar.
+// The licence travels with the jar: this module's own (GPL 2), not the repository's (GPL 3).
 tasks.jar {
-    from(rootProject.file("LICENSE")) { into("META-INF") }
+    from(layout.projectDirectory.file("LICENSE")) { into("META-INF") }
 }
 
 publishing {
@@ -33,8 +33,8 @@ publishing {
                 url.set("https://github.com/jasonsperske/soloton")
                 licenses {
                     license {
-                        name.set("GPL-3.0-only")
-                        url.set("https://www.gnu.org/licenses/gpl-3.0.html")
+                        name.set("GPL-2.0-or-later")
+                        url.set("https://www.gnu.org/licenses/old-licenses/gpl-2.0.html")
                     }
                 }
             }

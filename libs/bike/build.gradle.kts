@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-only
+// SPDX-License-Identifier: GPL-2.0-or-later
 // The Android half of the bike library: live cadence, power and resistance from the Peloton Bike
 // tablet's own sensor services. BikeSensors binds the services and BikePaceSource hands a game its
 // pace and resistance; a diagnostics screen comes with it. What the services say and what it means
@@ -35,8 +35,8 @@ publishing {
                 url.set("https://github.com/jasonsperske/soloton")
                 licenses {
                     license {
-                        name.set("GPL-3.0-only")
-                        url.set("https://www.gnu.org/licenses/gpl-3.0.html")
+                        name.set("GPL-2.0-or-later")
+                        url.set("https://www.gnu.org/licenses/old-licenses/gpl-2.0.html")
                     }
                 }
             }

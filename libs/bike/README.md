@@ -2,7 +2,7 @@
 
 Reads live cadence (rpm), power (watts) and resistance (0 to 100) from the sensor service that Peloton's own software runs on the original Bike's tablet, and turns them into the pace and resistance a game reads.
 
-It is a library in its own right, in two modules that depend on nothing else in this repository, so another game can take it as it is ([Use it in another game](#use-it-in-another-game)). It is free software under GPL-3.0-only ([what that means for a game that uses it](#credits-and-licence)).
+It is a library in its own right, in two modules that depend on nothing else in this repository, so another game can take it as it is ([Use it in another game](#use-it-in-another-game)). It is free software under GPL-2.0-or-later, so it can go into a GPL 2 project as well as a GPL 3 one ([what that means for a game that uses it](#credits-and-licence)).
 
 | Module | Artifact | What it is |
 |---|---|---|
@@ -114,9 +114,18 @@ The instrumented tests prove the client and the stand-ins agree, and that the cl
 
 ## Credits and licence
 
-Both modules are free software under the GNU General Public License, version 3 only (`GPL-3.0-only`), like the rest of the repository: see [LICENSE](../../LICENSE). Every source file carries the SPDX identifier, the published `bike-core` jar carries the licence text in `META-INF/LICENSE`, and both artifacts name the licence in their Maven metadata.
+Both modules are free software under the GNU General Public License, version 2 or, at your option, any later version (`GPL-2.0-or-later`): see [LICENSE](LICENSE) here and in `libs/bike-core`. That is deliberately wider than the rest of this repository, which is GPL-3.0-only, so that the library can be used in projects on either version. Every source file carries the SPDX identifier, the published `bike-core` jar carries the licence text in `META-INF/LICENSE`, and both artifacts name the licence in their Maven metadata.
 
-For a game that uses the library, that means the GPL's terms reach the game: if you distribute an app that includes it, the app as a whole has to be offered under GPL-3.0, with its source. Using it privately, on your own bike, asks nothing of you. This is a summary, not legal advice; the licence text is what counts.
+For a game that uses the library, that means the GPL's terms reach the game: if you distribute an app that includes it, the app as a whole has to be offered under the GPL, with its source. Which version is up to the game:
+
+| The game's licence | Using this library |
+|---|---|
+| GPL-2.0-only | Yes: take the library under version 2 |
+| GPL-2.0-or-later | Yes |
+| GPL-3.0-only or GPL-3.0-or-later | Yes: take the library under version 3. Roadwork, in this repository, does this |
+| Anything not GPL-compatible, or closed source | No |
+
+Using it privately, on your own bike, asks nothing of you. This is a summary, not legal advice; the licence text is what counts.
 
 It contains no code from Peloton and none copied from the projects below; it was written from the protocol facts they document.
 
