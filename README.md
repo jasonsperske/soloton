@@ -35,4 +35,8 @@ The first app, `roadwork`, is complete and runs on an emulator shaped like the g
 
 ## License
 
-[MIT](LICENSE)
+Copyright (C) 2026 Soloton contributors.
+
+Soloton is free software under the [GNU General Public License, version 3](LICENSE) (`GPL-3.0-only`), the same licence as [PeloMon](https://github.com/ihaque/pelomon), whose work decoding the Peloton Bike's sensor communications this project builds on. You may use, change and share it under those terms; anything you distribute that includes it must be released under the same licence, with source. It comes with no warranty.
+
+Versions of this repository up to and including commit `0c23c35` were published under the MIT licence, and stay available under it.
