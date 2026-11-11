@@ -21,6 +21,7 @@ rootProject.name = "soloton"
 include(":libs:api")
 include(":libs:platform")
 include(":libs:music")
+include(":libs:bike")
 
 // Apps: each app is apps/<name>/{core,android,desktop}
 include(":apps:roadwork:core")
