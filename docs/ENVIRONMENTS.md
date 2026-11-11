@@ -10,6 +10,7 @@ Environments are listed in `Environments.all` (`apps/roadwork/core/src/main/kotl
 |---|---|---|---|
 | `riverfront` | Riverfront Roadwork | `Mike Tyson's Punch-Out!!` | `dev.soloton.roadwork.env.riverfront` |
 | `skylift-mesa` | Skylift Mesa | `Space Harrier II` | `dev.soloton.roadwork.env.skylift` |
+| `pedalcraft-island` | Pedalcraft Island | `Pilotwings` | `dev.soloton.roadwork.env.pedalcraft` |
 
 - **id**: stable and kebab-case. The tablet saves the last environment ridden and each environment's music selection under it, and it is typed on the command line, so never rename one.
 - **Title**: shown to the rider (on the picker, under the PAUSED banner and in music settings).
@@ -17,7 +18,7 @@ Environments are listed in `Environments.all` (`apps/roadwork/core/src/main/kotl
 
 ## Resistance
 
-The game passes the bike's resistance to every scene as `RideState.resistance`, a fraction from 0 to 1 eased over about half a second. A scene may use it as a difficulty or intensity setting, or ignore it (the riverfront does). It comes from the bike's resistance knob when the bike's sensors are live ([libs/bike](../libs/bike/README.md)). Without a bike it is set by hand: **R** raises it and **F** lowers it by 5% during a ride (Page Up and Page Down do the same), and the desktop launcher takes `--resistance <0-100>`. There is no on-screen control for it.
+The game passes the bike's resistance to every scene as `RideState.resistance`, a fraction from 0 to 1 eased over about half a second. A scene may use it as a difficulty or intensity setting, or ignore it (the riverfront does). Skylift Mesa and Pedalcraft Island both turn it into height. It comes from the bike's resistance knob when the bike's sensors are live ([libs/bike](../libs/bike/README.md)). Without a bike it is set by hand: **R** raises it and **F** lowers it by 5% during a ride (Page Up and Page Down do the same), and the desktop launcher takes `--resistance <0-100>`. There is no on-screen control for it.
 
 ### Skylift Mesa
 
@@ -29,6 +30,25 @@ A desert trail under a teal sky ([on the ground](../apps/roadwork/docs/skylift-m
 - **Dodging:** the rider cannot steer, so the runner swerves by themself around anything on a collision course and returns to the middle of the trail. Nothing can be hit and there is no score.
 
 The rules are in `SkyliftMotion` (pure maths, unit tested); the geometry is in `MesaScenery` and the runner in `SpaceRunnerModel`. A scene that has its own view, as this one does, returns false from `riderView`, and the game then leaves the handlebars out.
+
+### Pedalcraft Island
+
+Pedal-powered flight round an island ([the island](../apps/roadwork/docs/pedalcraft-island-overview.png), [glider](../apps/roadwork/docs/pedalcraft-island-glider.png), [landing](../apps/roadwork/docs/pedalcraft-island-landing.png), [paramotor](../apps/roadwork/docs/pedalcraft-island-paramotor.png), [plane](../apps/roadwork/docs/pedalcraft-island-plane.png)). The view follows the craft from behind, so no handlebars are drawn. The island, the craft and their pilot are original designs. Unlike the trail environments, the world stands still and the craft moves through it.
+
+The ride is a tour of three legs that join end to end and then repeat:
+
+| Leg | Craft | From | To | Time at 3 m/s on the bike | Cruises above the ground by | Full resistance adds |
+|---|---|---|---|---|---|---|
+| 1 | Pedal glider: a delta wing over a seat frame | Hill strip, on the peak's shoulder | Beach, west shore | 24 min | 70 m | 160 m |
+| 2 | Pedal paramotor: an arched canopy over a caged propeller | Beach | Airfield, southern plain | 22 min | 30 m | 90 m |
+| 3 | Pedal plane: a high-winged ultralight | Airfield | Hill strip | 20 min | 130 m | 300 m |
+
+- **Pedalling** turns the propeller. The craft flies 5, 3 or 7 metres (glider, paramotor, plane) for every metre ridden, so the HUD's speed and distance are the bike's, not the craft's. Stop pedalling and the craft hangs where it is until you start again. The time for a leg scales with pace: at 2.5 m/s the three take about 29, 26 and 24 minutes, and at 4 m/s about 18, 16 and 15.
+- **Height** comes from the route, which follows the terrain: each craft cruises its own distance above the highest ground near its path, so the paramotor skims the land and the plane rides high over it.
+- **Resistance** adds height on top, in proportion, up to the craft's range with the knob at its end. It needs pedalling to hold: below 1.5 m/s the extra height fades, and the craft settles back to its cruising height.
+- **Take-off and landing** are flown for you. A craft rolls along its strip, climbs out, circles the island, lines up, descends without dropping below any ground still ahead of it, touches down and rolls to a stop. The next craft then starts from the same spot.
+
+`IslandTerrain` is the island as a height for any point, with the three landing spots levelled into it. `FlightRoute` is one leg's path and height profile, `FlightMotion` the tour and the craft's pose; all three are pure maths with unit tests (`FlightTest`). `IslandMeshes` builds the land in tiles, the shallows, sea, clouds, strip markings and buildings; `CraftModel` builds the three craft. Development cameras: `--view overview` shows the whole island from above and `--view craft-side` the craft from the side.
 
 ## The picker
 

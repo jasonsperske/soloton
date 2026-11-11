@@ -66,6 +66,17 @@ for shot in "skylift-mesa-ground:0" "skylift-mesa-climbing:45" "skylift-mesa-hig
   [[ -s "$out/$name.png" ]] || { echo "missing $out/$name.png" >&2; exit 1; }
 done
 
+# Pedalcraft Island: the island from above, then each craft in flight (name:seconds:resistance).
+# At the default pace the glider flies for the first 24 minutes, the paramotor for the next 22
+# and the plane for 20 after that.
+run "$launcher" --env pedalcraft-island --view overview --screenshot "$out/pedalcraft-island-overview.png" --at 0
+[[ -s "$out/pedalcraft-island-overview.png" ]] || { echo "missing $out/pedalcraft-island-overview.png" >&2; exit 1; }
+for shot in "pedalcraft-island-glider:400:60" "pedalcraft-island-landing:1432:0" "pedalcraft-island-paramotor:1800:40" "pedalcraft-island-plane:3200:70"; do
+  IFS=: read -r name at resistance <<< "$shot"
+  run "$launcher" --env pedalcraft-island --resistance "$resistance" --screenshot "$out/$name.png" --at "$at"
+  [[ -s "$out/$name.png" ]] || { echo "missing $out/$name.png" >&2; exit 1; }
+done
+
 # The environment picker, the screen the app opens on.
 run "$launcher" --picker --screenshot "$out/picker.png"
 [[ -s "$out/picker.png" ]] || { echo "missing $out/picker.png" >&2; exit 1; }
