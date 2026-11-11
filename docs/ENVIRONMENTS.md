@@ -48,6 +48,7 @@ The ride is a tour of three legs that join end to end and then repeat:
 - **Height** comes from the route, which follows the terrain: each craft cruises its own distance above the highest ground near its path, so the paramotor skims the land and the plane rides high over it.
 - **Resistance** adds height on top, in proportion, up to the craft's range with the knob at its end. It needs pedalling to hold: below 1.5 m/s the extra height fades, and the craft settles back to its cruising height.
 - **Take-off and landing** are flown for you. A craft rolls along its strip, climbs out, circles the island, lines up, descends without dropping below any ground still ahead of it, touches down and rolls to a stop. The next craft then starts from the same spot.
+- **Which craft** is the rider's choice in the environment's [settings](#settings): in turn as in the table, a random one each leg, or always the same one. Any craft can fly any of the three legs, on its own route between the same two spots, in 15 to 30 minutes at 3 m/s.
 
 `IslandTerrain` is the island as a height for any point, with the three landing spots levelled into it. `FlightRoute` is one leg's path and height profile, `FlightMotion` the tour and the craft's pose; all three are pure maths with unit tests (`FlightTest`). `IslandMeshes` builds the land in tiles, the shallows, sea, clouds, strip markings and buildings; `CraftModel` builds the three craft. Development cameras: `--view overview` shows the whole island from above and `--view craft-side` the craft from the side.
 
@@ -63,9 +64,31 @@ A bike ride through an endless city at night ([downtown](../apps/roadwork/docs/n
 
 `CityGrid` is the street geometry and the traffic lights, `CityRider` the rider's route, and `CityTraffic` the cars: all pure maths with unit tests (`CityTest`), which run twenty simulated minutes of traffic and check that no two cars, and no car and the rider, come closer than a passing lane apart. `CityBlocks` builds the blocks, cars and signal lamps. The development camera `--view overhead` looks down on the rider's neighbourhood without the haze.
 
+## Settings
+
+Each environment has its own settings ([screenshot](../apps/roadwork/docs/settings.png)), opened by the gear on its card in the picker or by the gear on the HUD during a ride. It is the same screen from both. A ride is paused while it is open and carries on as it was when it closes. There is nothing to confirm: each change is saved and takes effect at once, and **Done** (or back) closes the screen.
+
+| Setting | Choices | What it does |
+|---|---|---|
+| **Music** | **Choose music** opens the folders and songs for this environment ([INSTALL.md](INSTALL.md#choosing-folders-and-songs-on-the-tablet)) | The line beside it says how many songs are chosen, or in amber why nothing would play |
+| **Units** | Kilometres or miles | The HUD shows distance, speed (km/h or mph) and pace (per km or per mile) in them ([screenshot](../apps/roadwork/docs/ride-miles-goal.png)) |
+| **Goal** | Free ride, a distance, or a time | With a goal, the HUD's stats panel names it and a bar fills toward it. When it is reached the bar turns green and a banner says so for a few seconds; the ride carries on |
+| **How far / How long** | 1 to 100 km or miles; 5 to 120 minutes | The goal's amount, stepped with the minus and plus buttons. The number is kept if the units change (10 km becomes 10 miles) |
+| The environment's own options | Listed below | Only environments that have any show them |
+
+Environments with their own options:
+
+| Environment | Option | Choices |
+|---|---|---|
+| Pedalcraft Island | **Aircraft** | In turn (glider, paramotor, plane), a random one each leg, or always the glider, the paramotor or the plane. Changed during a flight, it starts with the next leg |
+
+Settings are saved per environment: on the tablet in the app's preferences, so they survive a restart; the desktop launcher forgets them when it closes, and takes `--units`, `--goal` and `--option` to set them for one run (`--settings` opens the screen).
+
+How it fits together: `EnvironmentSettings` holds one environment's units, goal and option choices, and `EnvironmentSettingsStore` loads and saves it in a `SettingsStore` (`libs/api`) that the launcher supplies. `SettingsScreen` draws the screen from positions in `SettingsLayout`. An environment declares what it offers with `Environment(options = listOf(EnvironmentOption(...)))`, up to two of them, and its scene receives the rider's choices through `EnvironmentScene.applyOptions`, before it is created and again whenever they change. `RideText` words the HUD's numbers in either unit.
+
 ## The picker
 
-The app opens on a picker ([screenshot](../apps/roadwork/docs/picker.png)): one card per environment, in registry order, with a preview of its scene, its title, a line about its music ("14 of 20 songs from 1 folder", or an amber line when nothing would play), a **Ride** button and a **Music** button that opens that environment's music settings. The environment ridden last is outlined. An **Exit** button at the top right closes the app. No music plays on the picker.
+The app opens on a picker ([screenshot](../apps/roadwork/docs/picker.png)): one card per environment, in registry order, with a preview of its scene, its title, a line about its music ("14 of 20 songs from 1 folder", or an amber line when nothing would play), a **Ride** button and a gear that opens that environment's [settings](#settings). The environment ridden last is outlined. An **Exit** button at the top right closes the app. No music plays on the picker.
 
 - **Ride** starts a ride from zero in that environment: its playlist is selected, its scene built, music started.
 - During a ride, pause and tap **Environments**, or press back (Escape on desktop), to end the ride and return to the picker: music stops and the scene is disposed. On the picker, back or the **Exit** button exits the app.
@@ -103,6 +126,7 @@ Each environment has a playlist, keyed by its id: an ordered list of folders and
 | `EnvironmentHost` | `core/.../EnvironmentHost.kt` | Holds the live scene and swaps it; calls `MusicController.usePlaylist(environment.playlist)` |
 | `AppFlow`, `RideSession` | `core/.../AppFlow.kt` | Picker or ride, and what happens between them: scene built and disposed, music started and stopped. Unit tested without OpenGL |
 | `Picker`, `PickerLayout` | `core/.../Picker.kt`, `PickerLayout.kt` | The picker screen: previews, cards, buttons |
+| `SettingsScreen`, `SettingsLayout`, `EnvironmentSettings` | `core/.../SettingsScreen.kt`, `SettingsLayout.kt`, `RideSettings.kt` | An environment's settings: the screen, and what is saved |
 | `RoadworkGame` | `core/.../RoadworkGame.kt` | The libGDX app: picker and rides, rider's bike, HUD; a ride draws scene, then bike, then HUD |
 | `PlaylistRef`, `PlaylistSummary` | `libs/api` | A playlist's id, title and default folder; its counts or problem for the picker |
 | `MusicController.usePlaylist(playlist)`, `playlistSummary(playlist)`, `stop()` | `libs/api`, implemented in `libs/music` | Play the songs selected for a playlist; describe it; stop on the way back to the picker |

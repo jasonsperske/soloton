@@ -21,6 +21,7 @@ The first app, `roadwork`, is complete and runs on an emulator shaped like the g
 - **Install on a bike:** download `roadwork.apk` from the [`latest` release](../../releases/tag/latest) and install it with `adb install -r`, or download and open it on the bike. See [docs/INSTALL.md](docs/INSTALL.md).
 - **Build your own:** fork the repo; CI builds APKs with no setup. See [docs/CI_SETUP.md](docs/CI_SETUP.md) for signing so updates install over each other.
 - **Build locally:** run `scripts/doctor.sh --fix` to check and install the JDK and Android SDK, then `./gradlew :apps:roadwork:android:assembleDebug`. See [docs/BUILDING.md](docs/BUILDING.md).
+- **Settings:** the gear on an environment's card, or on the screen during a ride, sets its music, kilometres or miles, a distance or time goal, and anything of its own (which aircraft Pedalcraft Island flies). See [docs/ENVIRONMENTS.md](docs/ENVIRONMENTS.md#settings).
 - **Music:** copy your own audio files to the tablet (default `/sdcard/Music/soloton`, one folder per game), then pick the folders and songs each environment plays in the app's music settings. No music is bundled or downloaded. See [docs/INSTALL.md](docs/INSTALL.md#copying-music-to-the-tablet).
 - **Your music on the emulator:** name a local folder in a git-ignored `.env` and `scripts/gen1-emulator.sh` copies it over. See [docs/BUILDING.md](docs/BUILDING.md#your-own-music-env).
 

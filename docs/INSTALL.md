@@ -88,7 +88,7 @@ If an environment has nothing to play (its folder is missing, empty or unreadabl
 
 ### Choosing folders and songs on the tablet
 
-Each environment has its own music. Tap **Music** on its card on the picker, or the gear during a ride, to open its settings ([screenshot](../apps/roadwork/docs/android-emulator-settings.png)):
+Each environment has its own music. Tap the gear on its card on the picker, or the gear during a ride, to open the environment's settings, then **Choose music** to open its music settings ([screenshot](../apps/roadwork/docs/android-emulator-settings.png)):
 
 - **Left: the folders that play in this environment**, each with how many of its songs are ticked. Tap a folder to see its songs. **Remove** takes a folder off the list (nothing is deleted from the tablet). **Reset to default** goes back to the environment's default folder with every song ticked.
 - **Right: the selected folder's songs**, each with a tick box. Tap a song to tick or untick it; **All** and **None** do the whole folder. Only ticked songs play. Songs you copy into the folder later start ticked.

@@ -155,6 +155,85 @@ class FlightTest {
         }
     }
 
+    // ---- which craft flies ----
+
+    @Test
+    fun anyCraftCanFlyAnyLegSafelyAndInFifteenToThirtyMinutes() {
+        val m = FlightMotion(terrain)
+        for (craft in Craft.entries) {
+            for (index in 0 until FlightMotion.LEGS) {
+                val r = m.routeFor(craft, index)
+                assertEquals(r, m.routeFor(craft, index), "a route is built once")
+                val minutes = r.length / (craft.gearing * FlightMotion.REFERENCE_SPEED) / 60f
+                assertTrue(minutes in 15f..30f, "$craft on leg $index takes $minutes minutes")
+                assertEquals(m.legs[index].route.start, r.start, "$craft leg $index starts where the tour's does")
+                assertEquals(m.legs[index].route.end, r.end, "$craft leg $index ends where the tour's does")
+                var s = 0f
+                while (s <= r.length) {
+                    val above = r.heightAt(s, 0f, craft.seat) - terrain.ground(r.x(s), r.z(s))
+                    assertTrue(above >= craft.seat - 0.01f, "$craft on leg $index at $s m is $above m above the ground")
+                    s += 10f
+                }
+            }
+        }
+        // The tour itself is the three routes it always was.
+        for (index in 0 until FlightMotion.LEGS) assertEquals(m.legs[index].route, m.routeFor(Craft.entries[index], index))
+    }
+
+    @Test
+    fun theFleetDecidesWhichCraftFliesEachLeg() {
+        fun craftsFlown(fleet: Fleet, seed: Long = 5L, legs: Int = 7): List<Craft> {
+            val m = FlightMotion(terrain, seed)
+            m.fleet = fleet
+            val flown = ArrayList<Craft>()
+            flown += m.craft
+            var guard = 0
+            while (flown.size < legs && guard++ < 60 * 60 * 200) {
+                val before = m.legsFlown
+                m.step(dt, 6f, 0f)
+                if (m.legsFlown != before) flown += m.craft
+            }
+            return flown
+        }
+        assertEquals(listOf(Craft.GLIDER, Craft.PARAMOTOR, Craft.PLANE, Craft.GLIDER), craftsFlown(Fleet.IN_TURN, legs = 4))
+        assertEquals(List(4) { Craft.GLIDER }, craftsFlown(Fleet.GLIDER, legs = 4))
+        assertEquals(List(4) { Craft.PARAMOTOR }, craftsFlown(Fleet.PARAMOTOR, legs = 4))
+        assertEquals(List(4) { Craft.PLANE }, craftsFlown(Fleet.PLANE, legs = 4))
+        // Random: more than one kind turns up, the same seed gives the same order, another seed another.
+        val random = craftsFlown(Fleet.RANDOM)
+        assertTrue(random.toSet().size >= 2, "random flew only $random")
+        assertEquals(random, craftsFlown(Fleet.RANDOM))
+        assertTrue((1L..6L).any { craftsFlown(Fleet.RANDOM, seed = it) != random }, "every seed gave $random")
+
+        for (fleet in Fleet.entries) assertEquals(fleet, Fleet.byId(fleet.id))
+        assertEquals(Fleet.IN_TURN, Fleet.byId(null))
+        assertEquals(Fleet.IN_TURN, Fleet.byId("zeppelin"))
+        assertEquals(Fleet.entries.map { it.id }, Pedalcraft.environment.options.single().choices.map { it.id })
+        assertEquals(Fleet.IN_TURN.id, Pedalcraft.environment.options.single().default.id, "left alone, the tour is as it was")
+    }
+
+    @Test
+    fun aChangeOfFleetBeforeSettingOffIsImmediateAndInFlightWaitsForTheNextLeg() {
+        val m = FlightMotion(terrain)
+        m.fleet = Fleet.PLANE
+        assertEquals(Craft.PLANE, m.craft, "not yet moving: the craft on the strip changes")
+        assertEquals(terrain.hill.height + Craft.PLANE.seat, m.y, 0.05f)
+
+        repeat(60 * 60) { m.step(dt, 3f, 0f) }
+        m.fleet = Fleet.PARAMOTOR
+        assertEquals(Craft.PLANE, m.craft, "in the air: this leg is finished in the plane")
+        var guard = 0
+        while (m.legsFlown == 0 && guard++ < 60 * 60 * 60) m.step(dt, 6f, 0f)
+        assertEquals(Craft.PARAMOTOR, m.craft)
+        assertEquals(terrain.beach, m.leg.route.start)
+        assertEquals(terrain.beach.height + Craft.PARAMOTOR.seat, m.y, 0.3f)
+
+        // The scene passes the rider's choice on.
+        val scene = PedalcraftScene(RoadworkGame.DEFAULT_SEED)
+        scene.applyOptions(mapOf(Pedalcraft.CRAFT to "glider"))
+        scene.applyOptions(emptyMap())
+    }
+
     // ---- flying ----
 
     @Test

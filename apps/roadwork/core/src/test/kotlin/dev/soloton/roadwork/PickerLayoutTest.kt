@@ -65,12 +65,15 @@ class PickerLayoutTest {
         for (n in 1..PickerLayout.MAX_CARDS) {
             val l = layout(n)
             for (c in l.cards) {
-                for (b in listOf(c.ride, c.music)) {
+                for (b in listOf(c.ride, c.settings)) {
                     assertTrue(b.width >= PickerLayout.MIN_TOUCH && b.height >= PickerLayout.MIN_TOUCH, "$n cards: button $b")
                 }
-                assertEquals(c.ride.width, c.music.width)
-                assertEquals(c.ride.y, c.music.y)
-                assertTrue(c.ride.x < c.music.x, "Ride comes first")
+                // The gear is a square at the right end of the row; Ride is the wide one and comes first.
+                assertEquals(c.settings.width, c.settings.height)
+                assertEquals(c.ride.y, c.settings.y)
+                assertEquals(c.ride.height, c.settings.height)
+                assertTrue(c.ride.x < c.settings.x && c.ride.width > c.settings.width, "$n cards: Ride ${c.ride}, settings ${c.settings}")
+                assertEquals(c.preview.x + c.preview.width, c.settings.x + c.settings.width, 0.01f, "$n cards: the gear ends where the picture does")
                 // The picture is worth showing, and the text lines are tall enough for their text.
                 assertTrue(c.preview.height >= 150f && c.preview.width >= 300f, "$n cards: preview ${c.preview}")
                 assertTrue(c.preview.width / c.preview.height >= 16f / 9f - 0.01f, "$n cards: preview is never taller than 16:9")

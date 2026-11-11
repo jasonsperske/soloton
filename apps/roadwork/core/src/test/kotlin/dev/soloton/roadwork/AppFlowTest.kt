@@ -63,7 +63,7 @@ class AppFlowTest {
         flow.ride(b)
 
         assertEquals(
-            listOf("picker.hide", "music.usePlaylist(Game B)", "b.create", "music.start", "ride.started(b)"),
+            listOf("picker.hide", "music.usePlaylist(Game B)", "b.options", "b.create", "music.start", "ride.started(b)"),
             log,
         )
         assertEquals(AppFlow.Screen.RIDE, flow.screen)
@@ -130,7 +130,7 @@ class AppFlowTest {
         assertEquals(2, scenes.size)
         assertTrue(scenes[0].disposed && !scenes[1].disposed)
         assertEquals(0.0, scenes[1].createdAtSeconds)
-        assertEquals(listOf("picker.hide", "music.usePlaylist(Game A's Music!!)", "a.create", "music.start", "ride.started(a)"), log)
+        assertEquals(listOf("picker.hide", "music.usePlaylist(Game A's Music!!)", "a.options", "a.create", "music.start", "ride.started(a)"), log)
         assertEquals(listOf("a", "a"), remembered)
     }
 
@@ -175,7 +175,7 @@ class AppFlowTest {
     fun startingWithAnEnvironmentSkipsThePickerAndBackStillReachesIt() {
         val flow = flow(initial = b, startOnPicker = false)
         flow.open()
-        assertEquals(listOf("music.usePlaylist(Game B)", "b.create", "music.start", "ride.started(b)"), log)
+        assertEquals(listOf("music.usePlaylist(Game B)", "b.options", "b.create", "music.start", "ride.started(b)"), log)
         assertEquals(AppFlow.Screen.RIDE, flow.screen)
         assertEquals(listOf("b"), remembered)
         log.clear()
@@ -199,7 +199,7 @@ class AppFlowTest {
         repeat(120) { session.ride.step(1f / 60f, 3f); session.host.step(1f / 60f) }
         log.clear()
         assertTrue(flow.switchEnvironment(a))
-        assertEquals(listOf("music.usePlaylist(Game A's Music!!)", "b.dispose", "a.create"), log)
+        assertEquals(listOf("music.usePlaylist(Game A's Music!!)", "b.dispose", "a.options", "a.create"), log)
         assertSame(session, flow.session)
         assertEquals(2.0, session.ride.elapsedSeconds, 0.01)
         assertSame(a, flow.environment)

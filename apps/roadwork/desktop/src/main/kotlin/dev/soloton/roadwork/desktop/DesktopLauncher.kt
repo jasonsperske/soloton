@@ -2,9 +2,14 @@ package dev.soloton.roadwork.desktop
 
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration
+import dev.soloton.api.MemorySettingsStore
 import dev.soloton.api.SilentMusicController
 import dev.soloton.roadwork.AdjustableResistance
 import dev.soloton.roadwork.Environment
+import dev.soloton.roadwork.EnvironmentSettings
+import dev.soloton.roadwork.EnvironmentSettingsStore
+import dev.soloton.roadwork.GoalKind
+import dev.soloton.roadwork.Units
 import dev.soloton.roadwork.Environments
 import dev.soloton.roadwork.RoadworkGame
 import java.io.File
@@ -13,10 +18,12 @@ import kotlin.system.exitProcess
 private const val USAGE = """Usage: roadwork-desktop [--screenshot <out.png> [--at <seconds>] [--size <W>x<H>]]
                         [--stats [--duration <seconds>]] [--silent-music]
                         [--env <id>] [--picker] [--list-envs] [--view rider|<name>]
-                        [--resistance <0-100>]
+                        [--resistance <0-100>] [--settings] [--units km|miles]
+                        [--goal free|distance:<n>|time:<minutes>] [--option <key>=<choice>]...
 
 Without arguments, opens a 1280x720 window on the environment picker.
-Picker keys: left/right choose, Enter ride, Escape quit.
+Picker keys: left/right choose, Enter ride, S settings, Escape quit.
+Settings keys: U units, G goal, left/right goal amount, O first option, M music, Enter or Escape done.
 Ride keys: space pause, left/right pace, R/F raise or lower resistance, N skip, S settings,
            Escape or E back to the picker.
 --screenshot    render one frame offscreen and write it as PNG, then exit: a ride (in --env, or the
@@ -33,6 +40,11 @@ Ride keys: space pause, left/right pace, R/F raise or lower resistance, N skip, 
 --view          camera: rider (default, from the saddle) or one of the environment's development
                 cameras (riverfront: jogger-side, jogger-front, jogger-back; pedalcraft-island:
                 overview, craft-side; night-streets: overhead)
+--settings      open on the settings screen of --env (or the default environment)
+--units         the units of that environment: km (default) or miles
+--goal          its goal: free (default), distance:<n> in those units, or time:<minutes>
+--option        one of its own options, for example craft=random for pedalcraft-island
+                (settings are not saved between runs of the desktop launcher)
 --resistance    the bike's resistance in percent to start with, default 0 (environments that use
                 it, skylift-mesa and pedalcraft-island, fly higher as it rises)
 
@@ -72,11 +84,20 @@ fun main(args: Array<String>) {
     }
 
     val music = if (opts.silentMusic) SilentMusicController("(desktop)") else DemoMusicController(DemoMusicController.musicDirFromEnvironment())
+    val settingsStore = MemorySettingsStore()
+    try {
+        EnvironmentSettingsStore(settingsStore).save(environment, opts.settingsFor(environment))
+    } catch (e: IllegalArgumentException) {
+        System.err.println("error: ${e.message}")
+        exitProcess(2)
+    }
     val game = RoadworkGame(
         music = music,
         environment = environment,
         startOnPicker = opts.startsOnPicker,
         resistance = AdjustableResistance(opts.resistancePercent / 100f),
+        settingsStore = settingsStore,
+        openSettingsAtStart = opts.settings,
     )
     game.setInspectionView(opts.view)
     val shot = opts.screenshot
@@ -130,9 +151,37 @@ internal data class Options(
     val picker: Boolean = false,
     /** The resistance the ride starts with, 0 to 100. */
     val resistancePercent: Float = 0f,
+    /** Open on the environment's settings screen. */
+    val settings: Boolean = false,
+    val units: Units = Units.KILOMETRES,
+    val goalKind: GoalKind = GoalKind.FREE,
+    /** The goal's amount: whole units of distance, or minutes. Null keeps the default. */
+    val goalAmount: Int? = null,
+    /** Choices for the environment's own options, by option key. */
+    val options: Map<String, String> = emptyMap(),
 ) {
-    /** The window opens on the picker; `--env`, `--screenshot` and `--stats` go straight to a ride unless `--picker` is given. */
-    val startsOnPicker: Boolean get() = picker || (env == null && screenshot == null && !stats)
+    /** The settings these flags ask for, for [environment]; throws if an option or choice is not one of its. */
+    fun settingsFor(environment: Environment): EnvironmentSettings {
+        for ((key, choice) in options) {
+            val option = environment.options.firstOrNull { it.key == key }
+                ?: throw IllegalArgumentException("${environment.id} has no option '$key'. It has: ${environment.options.joinToString(", ") { it.key }.ifEmpty { "none" }}")
+            require(option.choices.any { it.id == choice }) { "--option $key must be one of ${option.choices.joinToString(", ") { it.id }}" }
+        }
+        return EnvironmentSettings(
+            units = units,
+            goalKind = goalKind,
+            goalDistance = if (goalKind == GoalKind.DISTANCE) goalAmount ?: EnvironmentSettings.DEFAULT_DISTANCE else EnvironmentSettings.DEFAULT_DISTANCE,
+            goalMinutes = if (goalKind == GoalKind.TIME) goalAmount ?: EnvironmentSettings.DEFAULT_MINUTES else EnvironmentSettings.DEFAULT_MINUTES,
+            options = options,
+        )
+    }
+
+    /**
+     * The window opens on the picker; `--env`, `--screenshot` and `--stats` go straight to a ride unless
+     * `--picker` is given. `--settings` alone opens the settings over the picker; with `--env` it opens
+     * them over that ride.
+     */
+    val startsOnPicker: Boolean get() = picker || (env == null && (settings || (screenshot == null && !stats)))
 }
 
 /** One line per environment: id, title and music folder, with the default marked. */
@@ -171,6 +220,31 @@ internal fun parseArgs(args: Array<String>): Options {
             "--silent-music" -> opts = opts.copy(silentMusic = true)
             "--env" -> opts = opts.copy(env = value(a))
             "--picker" -> opts = opts.copy(picker = true)
+            "--settings" -> opts = opts.copy(settings = true)
+            "--units" -> opts = opts.copy(
+                units = when (value(a)) {
+                    "km" -> Units.KILOMETRES
+                    "miles" -> Units.MILES
+                    else -> throw IllegalArgumentException("--units must be km or miles")
+                },
+            )
+            "--goal" -> {
+                val m = Regex("free|(distance|time):(\\d+)").matchEntire(value(a))
+                    ?: throw IllegalArgumentException("--goal must be free, distance:<n> or time:<minutes>")
+                opts = if (m.groupValues[1].isEmpty()) {
+                    opts.copy(goalKind = GoalKind.FREE, goalAmount = null)
+                } else {
+                    val amount = m.groupValues[2].toInt()
+                    if (amount < 1) throw IllegalArgumentException("--goal needs an amount of at least 1")
+                    opts.copy(goalKind = if (m.groupValues[1] == "distance") GoalKind.DISTANCE else GoalKind.TIME, goalAmount = amount)
+                }
+            }
+            "--option" -> {
+                val pair = value(a)
+                val cut = pair.indexOf('=')
+                if (cut < 1 || cut == pair.length - 1) throw IllegalArgumentException("--option must look like key=choice")
+                opts = opts.copy(options = opts.options + (pair.substring(0, cut) to pair.substring(cut + 1)))
+            }
             "--resistance" -> opts = opts.copy(
                 resistancePercent = value(a).toFloatOrNull()?.takeIf { it in 0f..100f }
                     ?: throw IllegalArgumentException("--resistance needs a number from 0 to 100"),

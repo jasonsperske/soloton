@@ -1,7 +1,7 @@
 {
   "repo": "jasonsperske/soloton",
-  "updated": "2026-11-11T11:30:00Z",
-  "summary": "Roadwork 0.3.0 is released with three environments. A fourth, Night Streets, is a ride through an endless city at night, turning at random at the junctions, with cars that obey the lights and give way to the rider. Resistance is not yet tested on the bike.",
+  "updated": "2026-11-11T14:30:00Z",
+  "summary": "Roadwork 0.4.0 is released with four environments. Next: each environment gets a settings screen, opened by a gear on its card and during a ride, for its music, kilometres or miles, a distance or time goal, and its own options such as which aircraft Pedalcraft Island flies.",
   "packages": [
     {
       "id": "WP0",
@@ -134,6 +134,14 @@
     {
       "time": "2026-11-11T11:30:00Z",
       "text": "Fourth environment, Night Streets: an endless night city built block by block, a random route through its junctions, and thirty cars with traffic lights. Checked on desktop only."
+    },
+    {
+      "time": "2026-11-11T11:45:00Z",
+      "text": "roadwork-v0.4.0 released: Night Streets."
+    },
+    {
+      "time": "2026-11-11T14:30:00Z",
+      "text": "Settings screen per environment: music, units, goal and the environment's own options, saved on the tablet. The picker's Music button is now a gear. Checked on desktop only."
     }
   ]
 }

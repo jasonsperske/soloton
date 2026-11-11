@@ -32,7 +32,7 @@ import kotlin.math.sqrt
  */
 class PedalcraftScene(private val seed: Long) : EnvironmentScene {
     private val terrain = IslandTerrain(seed)
-    private val motion = FlightMotion(terrain)
+    private val motion = FlightMotion(terrain, seed)
     private val sky = IslandSky()
     private val rng = Rng(seed)
 
@@ -122,6 +122,11 @@ class PedalcraftScene(private val seed: Long) : EnvironmentScene {
             c.viewportWidth = width.toFloat()
             c.viewportHeight = height.toFloat()
         }
+    }
+
+    /** The rider's choice of aircraft. Chosen during a flight, it takes effect on the next leg. */
+    override fun applyOptions(options: Map<String, String>) {
+        motion.fleet = Fleet.byId(options[Pedalcraft.CRAFT])
     }
 
     override fun step(dt: Float, ride: RideState) {

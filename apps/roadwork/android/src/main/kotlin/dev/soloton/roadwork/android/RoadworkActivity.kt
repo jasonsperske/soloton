@@ -8,6 +8,7 @@ import com.badlogic.gdx.backends.android.AndroidApplication
 import com.badlogic.gdx.backends.android.AndroidApplicationConfiguration
 import dev.soloton.api.PlatformActions
 import dev.soloton.api.PlaylistRef
+import dev.soloton.api.SettingsStore
 import dev.soloton.bike.BikePaceSource
 import dev.soloton.music.FolderMusicController
 import dev.soloton.music.MusicSettingsActivity
@@ -21,6 +22,7 @@ import dev.soloton.roadwork.RoadworkGame
 /**
  * Launcher: runs the libGDX app fullscreen, landscape, with the screen kept on. It opens on the
  * environment picker; a ride plays the songs chosen for its environment in music settings.
+ * Each environment's settings (units, goal, its own options) are saved in this app's preferences.
  *
  * Environment: the [EXTRA_ENVIRONMENT] launch extra, if it names a known environment, skips the picker
  * and rides it:
@@ -57,6 +59,11 @@ class RoadworkActivity : AndroidApplication() {
             }
         }
         val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        // Each environment's units, goal and options, kept in this app's preferences. apply() is safe from the render thread.
+        val settingsStore = object : SettingsStore {
+            override fun get(key: String): String? = prefs.getString(key, null)
+            override fun put(key: String, value: String) = prefs.edit().putString(key, value).apply()
+        }
         val requested = Environments.find(intent?.getStringExtra(EXTRA_ENVIRONMENT))
         val environment = requested ?: Environments.byId(prefs.getString(KEY_ENVIRONMENT, null))
         Log.i(TAG, if (requested != null) "Riding ${environment.id}" else "Picker, last environment ${environment.id}")
@@ -68,6 +75,7 @@ class RoadworkActivity : AndroidApplication() {
             // The bike's resistance knob; without a bike, the R and F keys of an attached keyboard.
             resistance = bike.resistanceOrElse(keysResistance),
             manualResistance = keysResistance,
+            settingsStore = settingsStore,
             actions = actions,
             environment = environment,
             startOnPicker = requested == null,
