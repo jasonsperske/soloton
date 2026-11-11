@@ -6,10 +6,16 @@ import dev.soloton.api.MusicController
  * One ride: its clock, its [RideState] and the [EnvironmentHost] holding the scene. Made new for
  * every ride, so a ride started from the picker begins at zero.
  */
-class RideSession(environment: Environment, music: MusicController, initialSpeed: Float, seed: Long) {
+class RideSession(
+    environment: Environment,
+    music: MusicController,
+    initialSpeed: Float,
+    seed: Long,
+    options: (Environment) -> Map<String, String> = { emptyMap() },
+) {
     val timestep = FixedTimestep(stepSeconds = 1f / 60f)
     val ride = RideState(initialSpeed)
-    val host = EnvironmentHost(environment, music, ride, seed)
+    val host = EnvironmentHost(environment, music, ride, seed, options)
 }
 
 /**
@@ -34,6 +40,7 @@ class AppFlow(
     private val startOnPicker: Boolean,
     private val stage: Stage,
     private val onRideStarted: (Environment) -> Unit = {},
+    private val options: (Environment) -> Map<String, String> = { emptyMap() },
 ) {
     enum class Screen { PICKER, RIDE }
 
@@ -156,7 +163,7 @@ class AppFlow(
         val previous = environment
         environment = next
         screen = Screen.RIDE
-        val s = RideSession(next, music, initialSpeed(), seed)
+        val s = RideSession(next, music, initialSpeed(), seed, options)
         s.host.setInspectionView(inspectionView)
         if (width > 0 && height > 0) s.host.resize(width, height)
         try {

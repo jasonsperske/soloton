@@ -15,18 +15,23 @@ import dev.soloton.api.PlaylistRef
  * @param musicFolder the sub-folder of the music root whose songs play here until the rider chooses
  *   other folders or songs in music settings (a folder name, taken literally), or null to start
  *   with everything under the root
+ * @param options what the rider can choose about this environment in its settings, beyond the
+ *   units and goal every environment has; the chosen values reach the scene through
+ *   [EnvironmentScene.applyOptions]
  * @param sceneFactory builds a new, not yet created scene from a seed
  */
 class Environment(
     val id: String,
     val title: String,
     val musicFolder: String?,
+    val options: List<EnvironmentOption> = emptyList(),
     private val sceneFactory: (seed: Long) -> EnvironmentScene,
 ) {
     init {
         require(isValidId(id)) { "environment id must be kebab-case (a-z, 0-9, single dashes): '$id'" }
         require(title.isNotBlank()) { "environment $id needs a title" }
         require(musicFolder == null || musicFolder.isNotBlank()) { "environment $id: musicFolder must be null or a folder name" }
+        require(options.map { it.key }.toSet().size == options.size) { "environment $id has two options with the same key" }
     }
 
     /** This environment's music: the rider's selection is saved under [id], starting from [musicFolder]. */
@@ -83,6 +88,14 @@ interface EnvironmentScene {
      * @return false, changing nothing, if this scene has no view with that name
      */
     fun setInspectionView(name: String?): Boolean = name == null
+
+    /**
+     * The rider's choices for this environment's [Environment.options]: the chosen choice id for
+     * each option key. Called before [create] with the saved settings, and again whenever the
+     * rider changes them during a ride. A scene without options ignores it; one that cannot apply
+     * a change at once (a craft already in the air) applies it when it next can.
+     */
+    fun applyOptions(options: Map<String, String>) {}
 
     /** True when the camera is the rider's eyes, so the game should draw the rider's bike. */
     val riderView: Boolean get() = true

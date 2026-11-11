@@ -55,6 +55,14 @@ internal class FakeScene(
     var size: Pair<Int, Int>? = null
     var view: String? = null
     var createdAtSeconds = -1.0
+
+    /** The rider's choices as last passed in, or null if they never were. */
+    var options: Map<String, String>? = null
+    override fun applyOptions(options: Map<String, String>) {
+        this.options = options
+        log += "$name.options"
+    }
+
     override val light: SceneLight = FakeLight()
     override val inspectionViews: List<String> get() = views
     override val riderView: Boolean get() = view == null
@@ -170,7 +178,7 @@ class EnvironmentsTest {
         assertNull(host.scene)
         host.resize(1920, 1080)
         host.open()
-        assertEquals(listOf("music.usePlaylist(Game A's Music!!)", "a.create"), log)
+        assertEquals(listOf("music.usePlaylist(Game A's Music!!)", "a.options", "a.create"), log)
         val scene = scenes.single()
         assertSame(scene, host.scene)
         assertEquals(42L, scene.seed)
@@ -194,7 +202,7 @@ class EnvironmentsTest {
 
         assertTrue(host.switchTo(b))
 
-        assertEquals(listOf("music.usePlaylist(Game B)", "a.dispose", "b.create"), log)
+        assertEquals(listOf("music.usePlaylist(Game B)", "a.dispose", "b.options", "b.create"), log)
         assertTrue(old.disposed)
         val new = scenes.last()
         assertSame(new, host.scene)

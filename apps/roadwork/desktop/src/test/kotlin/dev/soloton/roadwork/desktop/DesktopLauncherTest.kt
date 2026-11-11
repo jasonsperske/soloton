@@ -2,7 +2,10 @@ package dev.soloton.roadwork.desktop
 
 import dev.soloton.api.MusicState
 import dev.soloton.api.PlaylistRef
+import dev.soloton.roadwork.EnvironmentSettings
 import dev.soloton.roadwork.Environments
+import dev.soloton.roadwork.GoalKind
+import dev.soloton.roadwork.Units
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
 import kotlin.test.Test
@@ -41,6 +44,35 @@ class DesktopLauncherTest {
         for ((line, e) in lines.zip(Environments.all)) {
             assertTrue(line.startsWith(e.id) && e.title in line && "music: ${e.musicFolder}" in line, line)
         }
+    }
+
+    @Test
+    fun settingsFlagsBecomeTheEnvironmentsSettings() {
+        val plain = Environments.default
+        assertEquals(EnvironmentSettings(), parseArgs(emptyArray()).settingsFor(plain))
+        assertFalse(parseArgs(emptyArray()).settings)
+        assertTrue(parseArgs(arrayOf("--settings")).settings)
+
+        val miles = parseArgs(arrayOf("--units", "miles", "--goal", "distance:25")).settingsFor(plain)
+        assertEquals(Units.MILES, miles.units)
+        assertEquals(GoalKind.DISTANCE, miles.goalKind)
+        assertEquals(25, miles.goalDistance)
+        assertEquals("25 mi", miles.goalText())
+        val timed = parseArgs(arrayOf("--goal", "time:45")).settingsFor(plain)
+        assertEquals("45 min", timed.goalText())
+        assertEquals(EnvironmentSettings.DEFAULT_DISTANCE, timed.goalDistance)
+        assertEquals(GoalKind.FREE, parseArgs(arrayOf("--goal", "time:45", "--goal", "free")).settingsFor(plain).goalKind)
+
+        val island = Environments.byId("pedalcraft-island")
+        assertEquals(mapOf("craft" to "random"), parseArgs(arrayOf("--option", "craft=random")).settingsFor(island).options)
+        assertFailsWith<IllegalArgumentException> { parseArgs(arrayOf("--option", "craft=zeppelin")).settingsFor(island) }
+        assertFailsWith<IllegalArgumentException> { parseArgs(arrayOf("--option", "craft=random")).settingsFor(plain) }
+        for (bad in listOf(arrayOf("--units", "leagues"), arrayOf("--goal", "far"), arrayOf("--goal", "distance:0"), arrayOf("--goal", "time:"), arrayOf("--option", "craft"), arrayOf("--option", "=x"), arrayOf("--units"))) {
+            assertFailsWith<IllegalArgumentException>(bad.joinToString(" ")) { parseArgs(bad) }
+        }
+        // --settings alone opens them over the picker; with --env, over that ride.
+        assertTrue(parseArgs(arrayOf("--settings", "--screenshot", "/tmp/x.png")).startsOnPicker)
+        assertFalse(parseArgs(arrayOf("--settings", "--env", "riverfront")).startsOnPicker)
     }
 
     @Test

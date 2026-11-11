@@ -16,10 +16,7 @@ import com.badlogic.gdx.math.Rectangle
 import dev.soloton.roadwork.HudLayout.Button
 import com.badlogic.gdx.utils.Align
 import dev.soloton.api.MusicState
-import kotlin.math.PI
-import kotlin.math.cos
 import kotlin.math.roundToInt
-import kotlin.math.sin
 
 /**
  * Heads-up display drawn in a virtual 1080-pixel-tall space (width follows the aspect ratio).
@@ -35,8 +32,11 @@ import kotlin.math.sin
  *  |     |  5:33 /km   |     |          | Title - Artist           |     |
  *  +-----+-------------+-----+          +--------------------------+-----+
  * ```
- * Speed leads in km/h (the cycling convention) with pace per km below it. The rider's own
- * handlebars are drawn in the gap between the two bottom panels. Positions come from [HudLayout].
+ * Speed leads (the cycling convention) with pace below it, in the units of the environment's
+ * settings: km/h and time per km, or mph and time per mile. With a distance or time goal set, the
+ * stats panel also names the goal and shows a bar filling toward it, and a banner says when it is
+ * reached; the ride carries on. The rider's own handlebars are drawn in the gap between the two
+ * bottom panels. Positions come from [HudLayout].
  * While paused, a dimmed overlay adds the PAUSED banner, the environment's name and an
  * "Environments" button that leaves the ride for the picker.
  * Buttons are 120 px squares (at 1080 p). Text is the libGDX default font scaled up and
@@ -92,8 +92,14 @@ internal class Hud(private val listener: Listener) : InputAdapter() {
     private val environmentsButtonLayout = GlyphLayout()
     private var pausedShown = false
     private val elapsedLabelLayout = GlyphLayout()
+    private val goalLayout = GlyphLayout()
+    private val goalReachedLayout = GlyphLayout()
+    private val goalBannerLayout = GlyphLayout()
+    private var settings = EnvironmentSettings()
+    private var goalReached = false
+    private var bannerSeconds = 0f
     private var shownSeconds = -1L
-    private var shownDecameters = -1L
+    private var shownHundredths = -1L
     private var shownSpeedTenths = -1
     private var shownMusic: MusicState? = null
     private var musicProblem = false
@@ -110,6 +116,9 @@ internal class Hud(private val listener: Listener) : InputAdapter() {
         layoutText(pausedHintLayout, "Tap the play button to carry on", SCALE_SMALL, TEXT_DIM)
         layoutText(elapsedLabelLayout, "ELAPSED", SCALE_SMALL, TEXT_DIM)
         layoutText(environmentsButtonLayout, "Environments", SCALE_MEDIUM, Color.WHITE)
+        layoutText(goalReachedLayout, "GOAL REACHED", SCALE_SMALL, GOOD)
+        layoutText(goalBannerLayout, "Goal reached", SCALE_HUGE, Color.WHITE)
+        setSettings(settings)
         resize(Gdx.graphics.width, Gdx.graphics.height)
     }
 
@@ -129,6 +138,21 @@ internal class Hud(private val listener: Listener) : InputAdapter() {
         layoutText(environmentLayout, title, SCALE_SMALL, TEXT_DIM)
     }
 
+    /**
+     * The units to show and the goal to count toward. Call after [create], when a ride starts and
+     * whenever the rider changes the settings.
+     */
+    fun setSettings(value: EnvironmentSettings) {
+        settings = value
+        // Every number is laid out again in the new units.
+        shownSeconds = -1L
+        shownHundredths = -1L
+        shownSpeedTenths = -1
+        goalReached = false
+        bannerSeconds = 0f
+        if (value.goalKind != GoalKind.FREE) layoutText(goalLayout, "GOAL " + value.goalText(), SCALE_SMALL, TEXT_DIM)
+    }
+
     fun draw(
         elapsedSeconds: Double,
         distanceMeters: Double,
@@ -138,6 +162,13 @@ internal class Hud(private val listener: Listener) : InputAdapter() {
     ) {
         refreshText(elapsedSeconds, distanceMeters, speed, music)
         pausedShown = paused
+        val hasGoal = settings.goalKind != GoalKind.FREE
+        val progress = settings.progress(elapsedSeconds, distanceMeters)
+        if (hasGoal && progress >= 1f && !goalReached) {
+            goalReached = true
+            bannerSeconds = BANNER_SECONDS
+        }
+        if (bannerSeconds > 0f && !paused) bannerSeconds -= Gdx.graphics.deltaTime
         if (pressed != null) {
             pressedTime -= Gdx.graphics.deltaTime
             if (pressedTime <= 0f) pressed = null
@@ -167,6 +198,20 @@ internal class Hud(private val listener: Listener) : InputAdapter() {
         }
         if (paused) button(Button.ENVIRONMENTS)
         icons(paused)
+        if (hasGoal) {
+            // The goal bar along the bottom of the stats panel: a track, filled as far as the ride has got.
+            val barX = statsPanel.x + 28f
+            val barW = statsPanel.width - 56f
+            shapes.color = BUTTON_UP
+            shapes.rect(barX, statsPanel.y + 9f, barW, 8f)
+            shapes.color = if (goalReached) GOOD else ACCENT
+            shapes.rect(barX, statsPanel.y + 9f, barW * progress, 8f)
+        }
+        if (bannerSeconds > 0f) {
+            val w = goalBannerLayout.width + 120f
+            shapes.color = PANEL
+            UiIcons.roundRect(shapes, (width - w) / 2f, HEIGHT * 0.66f, w, 130f, 26f)
+        }
         shapes.end()
 
         batch.projectionMatrix = camera.combined
@@ -175,6 +220,13 @@ internal class Hud(private val listener: Listener) : InputAdapter() {
         drawText(elapsedLabelLayout, SCALE_SMALL, s.x + 28f, s.y + s.height - 22f)
         drawText(timeLayout, SCALE_HUGE, s.x + 26f, s.y + s.height - 58f)
         drawText(distLayout, SCALE_LARGE, s.x + 28f, s.y + 66f)
+        if (hasGoal) {
+            val label = if (goalReached) goalReachedLayout else goalLayout
+            drawText(label, SCALE_SMALL, s.x + s.width - 26f - label.width, s.y + s.height - 22f)
+        }
+        if (bannerSeconds > 0f) {
+            drawText(goalBannerLayout, SCALE_HUGE, (width - goalBannerLayout.width) / 2f, HEIGHT * 0.66f + 65f + goalBannerLayout.height / 2f)
+        }
 
         val textLeft = rect(Button.SLOWER).x + BUTTON + 16f
         val textW = rect(Button.FASTER).x - 16f - textLeft
@@ -223,38 +275,26 @@ internal class Hud(private val listener: Listener) : InputAdapter() {
     }
 
     private fun refreshText(elapsed: Double, distance: Double, speed: Float, music: MusicState) {
+        val units = settings.units
         val secs = elapsed.toLong()
         if (secs != shownSeconds) {
             shownSeconds = secs
-            sb.setLength(0)
-            val h = secs / 3600
-            val m = (secs / 60) % 60
-            val s = secs % 60
-            if (h > 0) { sb.append(h).append(':'); pad2(m) } else sb.append(m)
-            sb.append(':'); pad2(s)
+            RideText.time(sb, secs)
             layoutText(timeLayout, sb, SCALE_HUGE, Color.WHITE)
         }
-        val dam = (distance / 10.0).toLong()
-        if (dam != shownDecameters) {
-            shownDecameters = dam
-            sb.setLength(0)
-            sb.append(dam / 100).append('.'); pad2(dam % 100); sb.append(" km")
+        val hundredths = RideText.hundredths(distance, units)
+        if (hundredths != shownHundredths) {
+            shownHundredths = hundredths
+            RideText.distance(sb, distance, units)
             layoutText(distLayout, sb, SCALE_LARGE, Color.WHITE)
         }
+        // Speed is shown to a tenth of a metre per second's worth of change, which is finer than either unit's tenth.
         val tenths = (speed * 10f).roundToInt()
         if (tenths != shownSpeedTenths) {
             shownSpeedTenths = tenths
-            sb.setLength(0)
-            if (tenths <= 0) {
-                sb.append("--:-- /km")
-            } else {
-                val secPerKm = (10000f / tenths).roundToInt()
-                sb.append(secPerKm / 60).append(':'); pad2((secPerKm % 60).toLong()); sb.append(" /km")
-            }
+            RideText.pace(sb, tenths / 10f, units)
             layoutText(paceLayout, sb, SCALE_MEDIUM, TEXT_DIM)
-            sb.setLength(0)
-            val kmh10 = (tenths * 3.6f).roundToInt() // speed in tenths of km/h
-            sb.append(kmh10 / 10).append('.').append(kmh10 % 10).append(" km/h")
+            RideText.speed(sb, tenths / 10f, units)
             layoutText(speedLayout, sb, SCALE_LARGE, Color.WHITE)
         }
         if (music !== shownMusic) {
@@ -318,11 +358,6 @@ internal class Hud(private val listener: Listener) : InputAdapter() {
     private fun trackLine(title: String, artist: String?): String =
         if (artist.isNullOrBlank()) title else "$title  -  $artist"
 
-    private fun pad2(v: Long) {
-        if (v < 10) sb.append('0')
-        sb.append(v)
-    }
-
     // ---- shapes ----
 
     private fun panel(r: Rectangle, c: Color) {
@@ -336,16 +371,7 @@ internal class Hud(private val listener: Listener) : InputAdapter() {
         roundRect(r.x, r.y, r.width, r.height, 20f)
     }
 
-    private fun roundRect(x: Float, y: Float, w: Float, h: Float, radius: Float) {
-        // Without overlap, so translucent panels have an even tone.
-        shapes.rect(x + radius, y, w - 2 * radius, h)
-        shapes.rect(x, y + radius, radius, h - 2 * radius)
-        shapes.rect(x + w - radius, y + radius, radius, h - 2 * radius)
-        shapes.arc(x + radius, y + radius, radius, 180f, 90f, 8)
-        shapes.arc(x + w - radius, y + radius, radius, 270f, 90f, 8)
-        shapes.arc(x + w - radius, y + h - radius, radius, 0f, 90f, 8)
-        shapes.arc(x + radius, y + h - radius, radius, 90f, 90f, 8)
-    }
+    private fun roundRect(x: Float, y: Float, w: Float, h: Float, radius: Float) = UiIcons.roundRect(shapes, x, y, w, h, radius)
 
     private fun icons(paused: Boolean) {
         shapes.color = ICON
@@ -366,21 +392,9 @@ internal class Hud(private val listener: Listener) : InputAdapter() {
         shapes.triangle(cx - 30f, cy - 26f, cx - 30f, cy + 26f, cx + 2f, cy)
         shapes.triangle(cx - 4f, cy - 26f, cx - 4f, cy + 26f, cx + 26f, cy)
         shapes.rect(cx + 24f, cy - 26f, 8f, 52f)
-        // Settings gear: teeth and a ring.
+        // Settings gear.
         r = rect(Button.SETTINGS)
-        cx = r.x + r.width / 2f
-        cy = r.y + r.height / 2f
-        for (i in 0 until 8) {
-            val a = (i * PI / 4).toFloat()
-            val c = cos(a); val s = sin(a)
-            shapes.rectLine(cx + c * 27f, cy + s * 27f, cx + c * 39f, cy + s * 39f, 14f)
-        }
-        // Ring (an annulus from short segments, so the centre stays see-through).
-        for (i in 0 until 16) {
-            val a0 = (i * PI / 8).toFloat()
-            val a1 = ((i + 1) * PI / 8).toFloat()
-            shapes.rectLine(cx + cos(a0) * 21f, cy + sin(a0) * 21f, cx + cos(a1) * 21f, cy + sin(a1) * 21f, 17f)
-        }
+        UiIcons.gear(shapes, r.x + r.width / 2f, r.y + r.height / 2f)
         if (showPace) {
             r = rect(Button.SLOWER)
             cx = r.x + r.width / 2f
@@ -493,5 +507,10 @@ internal class Hud(private val listener: Listener) : InputAdapter() {
         private val DIM = Color(0.02f, 0.03f, 0.06f, 0.35f)
         private val TEXT_DIM = Color(0.82f, 0.86f, 0.90f, 1f)
         private val WARN = Color(1f, 0.74f, 0.30f, 1f)
+        private val ACCENT = Color(0.16f, 0.52f, 0.86f, 1f)
+        private val GOOD = Color(0.36f, 0.86f, 0.52f, 1f)
+
+        /** How long the "Goal reached" banner stays up. */
+        const val BANNER_SECONDS = 6f
     }
 }

@@ -4,12 +4,14 @@ import com.badlogic.gdx.ApplicationAdapter
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.Input
 import com.badlogic.gdx.graphics.GL20
+import dev.soloton.api.MemorySettingsStore
 import dev.soloton.api.MusicController
 import dev.soloton.api.MusicState
 import dev.soloton.api.NoPlatformActions
 import dev.soloton.api.PaceSource
 import dev.soloton.api.PlatformActions
 import dev.soloton.api.ResistanceSource
+import dev.soloton.api.SettingsStore
 import dev.soloton.api.SilentMusicController
 
 /**
@@ -27,7 +29,12 @@ import dev.soloton.api.SilentMusicController
  *
  * Starting a ride selects the environment's playlist ([MusicController.usePlaylist]) and then calls
  * [MusicController.start]; leaving one calls [MusicController.stop]. Input (touch and keys) goes to
- * the picker or to the HUD, whichever is on screen.
+ * the picker, the HUD or the settings screen, whichever is on screen.
+ *
+ * Each environment has settings ([EnvironmentSettings]): its music, the units shown, the ride's
+ * goal and the environment's own options. The gear on an environment's card in the picker and the
+ * gear on the HUD both open the same [SettingsScreen] over whatever was showing. A ride is paused
+ * while it is open. Changes are saved in [settingsStore] and take effect at once.
  *
  * Draw order per ride frame: the scene; the rider's handlebars (fresh depth, eye-space camera); the HUD.
  *
@@ -43,6 +50,8 @@ import dev.soloton.api.SilentMusicController
  * @param resistance how hard the bike is set, passed to scenes through [RideState.resistance]
  * @param manualResistance the resistance the R (raise) and F (lower) keys adjust, if any. Defaults to
  *   [resistance] when that is an [AdjustableResistance]; pass it separately when [resistance] wraps it.
+ * @param settingsStore where each environment's settings are kept between runs
+ * @param openSettingsAtStart open on [environment]'s settings screen (for development screenshots)
  */
 class RoadworkGame(
     private val music: MusicController = SilentMusicController(),
@@ -56,7 +65,11 @@ class RoadworkGame(
     private val manualPaceActive: () -> Boolean = { true },
     private val resistance: ResistanceSource = AdjustableResistance(),
     private val manualResistance: AdjustableResistance? = resistance as? AdjustableResistance,
+    settingsStore: SettingsStore = MemorySettingsStore(),
+    private val openSettingsAtStart: Boolean = false,
 ) : ApplicationAdapter() {
+    private val environmentSettings = EnvironmentSettingsStore(settingsStore)
+
     private val stage = object : AppFlow.Stage {
         override fun pickerShown(highlight: Environment) {
             picker.show(highlight)
@@ -82,8 +95,10 @@ class RoadworkGame(
         stage = stage,
         onRideStarted = { next ->
             this.environment = next
+            if (created) hud.setSettings(environmentSettings.load(next))
             onEnvironmentChanged(next)
         },
+        options = { environmentSettings.load(it).options },
     )
 
     /** The environment being ridden (on the picker: the one ridden last). Safe to read from any thread. */
@@ -107,7 +122,16 @@ class RoadworkGame(
     private val riderBike = RiderBike()
     private lateinit var hud: Hud
     private lateinit var picker: Picker
+    private lateinit var settingsScreen: SettingsScreen
     private var created = false
+
+    /** Whether the ride was already paused when the settings were opened over it, so closing them leaves it as it was. */
+    private var pausedBeforeSettings = false
+
+    /** True while an environment's settings screen is showing. Safe to read from any thread. */
+    @Volatile
+    var settingsOpen = false
+        private set
 
     private val hudListener = object : Hud.Listener {
         override fun onSlower() { manualPace?.slower() }
@@ -116,7 +140,7 @@ class RoadworkGame(
         // comes back once the folder has been copied over, without leaving the ride.
         override fun onSkip() { if (music.state is MusicState.Problem) music.start() else music.skip() }
         override fun onTogglePause() { setPaused(!paused) }
-        override fun onSettings() { actions.openMusicSettings(environment.playlist) }
+        override fun onSettings() { showSettings(environment) }
         override fun onEnvironments() { showPicker() }
         override fun onResistanceUp() { manualResistance?.raise() }
         override fun onResistanceDown() { manualResistance?.lower() }
@@ -124,8 +148,23 @@ class RoadworkGame(
 
     private val pickerListener = object : Picker.Listener {
         override fun onRide(environment: Environment) { ride(environment) }
-        override fun onMusic(environment: Environment) { actions.openMusicSettings(environment.playlist) }
+        override fun onSettings(environment: Environment) { showSettings(environment) }
         override fun onExit() { Gdx.app.exit() }
+    }
+
+    private val settingsListener = object : SettingsScreen.Listener {
+        override fun onChanged(environment: Environment, settings: EnvironmentSettings) {
+            environmentSettings.save(environment, settings)
+            // If this is the environment being ridden, the ride takes the change now.
+            val session = flow.session
+            if (session != null && session.host.environment.id == environment.id) {
+                hud.setSettings(settings)
+                session.host.refreshOptions()
+            }
+        }
+
+        override fun onMusic(environment: Environment) { actions.openMusicSettings(environment.playlist) }
+        override fun onDone() { closeSettings() }
     }
 
     override fun create() {
@@ -135,6 +174,8 @@ class RoadworkGame(
         hud.setPaceAdjustable(manualPace != null && manualPaceActive())
         picker = Picker(Environments.all, music, seed, pickerListener)
         picker.create()
+        settingsScreen = SettingsScreen(music, settingsListener)
+        settingsScreen.create()
         // Back comes to the input processor instead of closing the app: the ride returns to the picker.
         Gdx.input.setCatchKey(Input.Keys.BACK, true)
 
@@ -143,6 +184,7 @@ class RoadworkGame(
         flow.open()
         screen = flow.screen
         resize(Gdx.graphics.width, Gdx.graphics.height)
+        if (openSettingsAtStart) showSettings(environment)
     }
 
     /**
@@ -152,6 +194,7 @@ class RoadworkGame(
      */
     fun ride(next: Environment) {
         if (!created) return
+        closeSettings()
         paused = false
         flow.ride(next)
         screen = flow.screen
@@ -160,10 +203,42 @@ class RoadworkGame(
     /** Leaves the ride for the picker: music stops and the scene is disposed. Render thread only. */
     fun showPicker() {
         if (!created || flow.screen != AppFlow.Screen.RIDE) return
+        closeSettings()
         paused = false
         flow.toPicker()
         screen = flow.screen
     }
+
+    /**
+     * Opens [of]'s settings over the picker or the ride, whichever is showing. A ride is paused
+     * until they are closed. Render thread only.
+     */
+    fun showSettings(of: Environment) {
+        if (!created) return
+        if (!settingsOpen) {
+            pausedBeforeSettings = paused
+            setPaused(true)
+        }
+        settingsScreen.show(of, environmentSettings.load(of))
+        settingsOpen = true
+        Gdx.input.inputProcessor = settingsScreen
+    }
+
+    /** Closes the settings, back to the picker or to the ride as it was. Does nothing if they are not open. */
+    fun closeSettings() {
+        if (!settingsOpen) return
+        settingsScreen.hide()
+        settingsOpen = false
+        if (flow.session != null) {
+            Gdx.input.inputProcessor = hud
+            setPaused(pausedBeforeSettings)
+        } else {
+            Gdx.input.inputProcessor = picker
+        }
+    }
+
+    /** The settings of [of] as saved: its units, goal and options. */
+    fun settingsOf(of: Environment): EnvironmentSettings = environmentSettings.load(of)
 
     /**
      * Goes to a ride in the environment with this [id] from wherever the app is (a launch request
@@ -216,6 +291,7 @@ class RoadworkGame(
         riderBike.resize(width, height)
         hud.resize(width, height)
         picker.resize(width, height)
+        settingsScreen.resize(width, height)
     }
 
     override fun render() {
@@ -243,6 +319,10 @@ class RoadworkGame(
     }
 
     fun draw() {
+        if (settingsOpen) {
+            settingsScreen.draw()
+            return
+        }
         val session = flow.session
         if (session == null) {
             if (picker.shown) picker.draw()
@@ -269,6 +349,7 @@ class RoadworkGame(
 
     override fun dispose() {
         flow.dispose()
+        if (::settingsScreen.isInitialized) settingsScreen.dispose()
         if (::picker.isInitialized) picker.dispose()
         if (::hud.isInitialized) hud.dispose()
         riderBike.dispose()

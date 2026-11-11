@@ -87,6 +87,12 @@ done
 run "$launcher" --env night-streets --view overhead --screenshot "$out/night-streets-overhead.png" --at 60
 [[ -s "$out/night-streets-overhead.png" ]] || { echo "missing $out/night-streets-overhead.png" >&2; exit 1; }
 
+# An environment's settings screen (one with an option of its own), and a ride in miles with a time goal.
+run "$launcher" --env pedalcraft-island --settings --goal distance:10 --screenshot "$out/settings.png"
+[[ -s "$out/settings.png" ]] || { echo "missing $out/settings.png" >&2; exit 1; }
+run "$launcher" --env riverfront --units miles --goal time:5 --screenshot "$out/ride-miles-goal.png" --at 200
+[[ -s "$out/ride-miles-goal.png" ]] || { echo "missing $out/ride-miles-goal.png" >&2; exit 1; }
+
 # The environment picker, the screen the app opens on.
 run "$launcher" --picker --screenshot "$out/picker.png"
 [[ -s "$out/picker.png" ]] || { echo "missing $out/picker.png" >&2; exit 1; }

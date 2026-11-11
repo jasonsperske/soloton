@@ -21,8 +21,8 @@ import dev.soloton.api.PlaylistSummary
 
 /**
  * The first screen: one card per environment, each with a preview of its scene, its title, a line
- * about its music, a Ride button and a Music button. Positions come from [PickerLayout]; text is
- * drawn the way the HUD draws it. The environment ridden last is outlined.
+ * about its music, a Ride button and a gear that opens its settings. Positions come from
+ * [PickerLayout]; text is drawn the way the HUD draws it. The environment ridden last is outlined.
  *
  * A preview is one frame of the scene, [PREVIEW_SECONDS] into a ride at the default pace, drawn
  * once into a framebuffer when the picker is shown (no HUD, no handlebars) and kept until it is
@@ -30,7 +30,7 @@ import dev.soloton.api.PlaylistSummary
  *
  * An Exit button at the top right closes the app.
  *
- * Keys: left/right move the outline, Enter or space rides, M opens music settings, Escape or
+ * Keys: left/right move the outline, Enter or space rides, S opens the settings, Escape or
  * Android's back button exits.
  */
 internal class Picker(
@@ -41,7 +41,7 @@ internal class Picker(
 ) : InputAdapter() {
     interface Listener {
         fun onRide(environment: Environment)
-        fun onMusic(environment: Environment)
+        fun onSettings(environment: Environment)
         fun onExit()
     }
 
@@ -62,7 +62,6 @@ internal class Picker(
 
     private val headerLayout = GlyphLayout()
     private val rideLayout = GlyphLayout()
-    private val musicLayout = GlyphLayout()
     private val exitLayout = GlyphLayout()
     private val titleLayouts = Array(environments.size) { GlyphLayout() }
     private val summaryLayouts = Array(environments.size) { GlyphLayout() }
@@ -85,7 +84,6 @@ internal class Picker(
         camera.setToOrtho(false, layout.width, PickerLayout.HEIGHT)
         layoutText(headerLayout, "Choose an environment", SCALE_HEADER, Color.WHITE)
         layoutText(rideLayout, "Ride", SCALE_BUTTON, Color.WHITE)
-        layoutText(musicLayout, "Music", SCALE_BUTTON, Color.WHITE)
         layoutText(exitLayout, "Exit", SCALE_BUTTON, Color.WHITE)
         val titleScale = if (layout.compact) SCALE_TITLE_COMPACT else SCALE_TITLE
         for (i in environments.indices) {
@@ -184,7 +182,9 @@ internal class Picker(
             shapes.color = ACCENT
             roundRect(c.ride.x, c.ride.y, c.ride.width, c.ride.height, 20f)
             shapes.color = BUTTON
-            roundRect(c.music.x, c.music.y, c.music.width, c.music.height, 20f)
+            roundRect(c.settings.x, c.settings.y, c.settings.width, c.settings.height, 20f)
+            shapes.color = Color.WHITE
+            UiIcons.gear(shapes, c.settings.x + c.settings.width / 2f, c.settings.y + c.settings.height / 2f, c.settings.height / 120f)
         }
         shapes.end()
 
@@ -218,7 +218,6 @@ internal class Picker(
             drawLeft(titleLayouts[i], titleScale, c.title)
             drawLeft(summaryLayouts[i], SCALE_SUMMARY, c.summary)
             drawCentred(rideLayout, SCALE_BUTTON, c.ride)
-            drawCentred(musicLayout, SCALE_BUTTON, c.music)
         }
         batch.end()
         gl.glDisable(GL20.GL_BLEND)
@@ -277,7 +276,7 @@ internal class Picker(
         for (i in environments.indices) {
             val c = layout.cards[i]
             when {
-                c.music.contains(x, y) -> listener.onMusic(environments[i])
+                c.settings.contains(x, y) -> listener.onSettings(environments[i])
                 // The picture is as good a place to tap as the button.
                 c.ride.contains(x, y) || c.preview.contains(x, y) -> listener.onRide(environments[i])
                 else -> continue
@@ -292,7 +291,7 @@ internal class Picker(
             Input.Keys.LEFT -> highlight = (highlight + environments.size - 1) % environments.size
             Input.Keys.RIGHT -> highlight = (highlight + 1) % environments.size
             Input.Keys.ENTER, Input.Keys.SPACE -> listener.onRide(environments[highlight])
-            Input.Keys.M, Input.Keys.S -> listener.onMusic(environments[highlight])
+            Input.Keys.M, Input.Keys.S -> listener.onSettings(environments[highlight])
             Input.Keys.BACK, Input.Keys.ESCAPE -> listener.onExit()
             else -> return false
         }

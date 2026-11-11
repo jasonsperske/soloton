@@ -11,7 +11,7 @@ import kotlin.math.min
  *
  * A heading strip runs across the top, with the Exit button at its right end. Below it, one to
  * four environments sit in a single row; five to eight in two rows. A card stacks a
- * preview image, the title, the music summary and two buttons:
+ * preview image, the title, the music summary, a wide Ride button and a square settings button:
  *
  * ```
  *  +-----------------------------+
@@ -19,7 +19,7 @@ import kotlin.math.min
  *  |                             |
  *  | Title                       |
  *  | 14 of 20 songs from 1 folder|
- *  | [    Ride    ] [   Music   ]|
+ *  | [        Ride        ] [(*)]|
  *  +-----------------------------+
  * ```
  */
@@ -31,9 +31,11 @@ class PickerLayout {
         val title = Rectangle()
         val summary = Rectangle()
         val ride = Rectangle()
-        val music = Rectangle()
 
-        fun parts(): List<Rectangle> = listOf(preview, title, summary, ride, music)
+        /** The gear: opens the environment's settings (music, units, goal and its own options). */
+        val settings = Rectangle()
+
+        fun parts(): List<Rectangle> = listOf(preview, title, summary, ride, settings)
     }
 
     var width = 1920f
@@ -88,9 +90,10 @@ class PickerLayout {
             val y = top - row * (cardH + GAP) - cardH
             val c = cards[i]
             c.bounds.set(x, y, cardW, cardH)
-            val buttonW = (previewW - BUTTON_GAP) / 2f
-            c.ride.set(x + pad, y + pad, buttonW, buttonH)
-            c.music.set(x + pad + buttonW + BUTTON_GAP, y + pad, buttonW, buttonH)
+            // The settings button is a square; Ride takes the rest of the row.
+            val rideW = previewW - BUTTON_GAP - buttonH
+            c.ride.set(x + pad, y + pad, rideW, buttonH)
+            c.settings.set(x + pad + rideW + BUTTON_GAP, y + pad, buttonH, buttonH)
             c.summary.set(x + pad, c.ride.y + buttonH + TEXT_GAP, previewW, summaryH)
             c.title.set(x + pad, c.summary.y + summaryH, previewW, titleH)
             c.preview.set(x + pad, c.title.y + titleH + TEXT_GAP, previewW, previewH)

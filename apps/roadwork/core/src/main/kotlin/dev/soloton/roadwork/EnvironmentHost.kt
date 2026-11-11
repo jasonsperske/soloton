@@ -10,6 +10,9 @@ import dev.soloton.api.MusicController
  * The [ride] is shared with every scene and is not reset by a switch: elapsed time, distance and
  * speed belong to the workout, not to the scenery.
  *
+ * [options] supplies the rider's choices for an environment's options; a scene is given them
+ * before it is created.
+ *
  * Render thread only.
  */
 class EnvironmentHost(
@@ -17,6 +20,7 @@ class EnvironmentHost(
     private val music: MusicController,
     private val ride: RideState,
     private val seed: Long,
+    private val options: (Environment) -> Map<String, String> = { emptyMap() },
 ) {
     var environment: Environment = initial
         private set
@@ -75,6 +79,11 @@ class EnvironmentHost(
         scene?.resize(width, height)
     }
 
+    /** Passes the rider's choices, as they now stand, to the live scene (they were changed during the ride). */
+    fun refreshOptions() {
+        scene?.applyOptions(options(environment))
+    }
+
     fun step(dt: Float) {
         scene?.step(dt, ride)
     }
@@ -88,6 +97,7 @@ class EnvironmentHost(
     private fun build(environment: Environment): EnvironmentScene {
         val s = environment.createScene(seed)
         try {
+            s.applyOptions(options(environment))
             s.create(ride)
             if (width > 0 && height > 0) s.resize(width, height)
             if (!s.setInspectionView(inspectionView)) inspectionView = null
