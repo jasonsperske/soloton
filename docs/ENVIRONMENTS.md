@@ -72,7 +72,7 @@ Each environment has its own settings ([screenshot](../apps/roadwork/docs/settin
 |---|---|---|
 | **Music** | **Choose music** opens the folders and songs for this environment ([INSTALL.md](INSTALL.md#choosing-folders-and-songs-on-the-tablet)) | The line beside it says how many songs are chosen, or in amber why nothing would play |
 | **Units** | Kilometres or miles | The HUD shows distance, speed (km/h or mph) and pace (per km or per mile) in them ([screenshot](../apps/roadwork/docs/ride-miles-goal.png)) |
-| **Speed** | x0.25 to x10.00, in steps of 0.25 | How fast the world goes by for the speed pedalled: see [Speed](#speed) |
+| **Speed** | x0.25 to x100.00 | How fast the world goes by for the speed pedalled: see [Speed](#speed) |
 | **Goal** | Free ride, a distance, or a time | With a goal, the HUD's stats panel names it and a bar fills toward it. When it is reached the bar turns green and a banner says so for a few seconds; the ride carries on |
 | **How far / How long** | 1 to 100 km or miles; 5 to 120 minutes | The goal's amount, stepped with the minus and plus buttons. The number is kept if the units change (10 km becomes 10 miles) |
 | The environment's own options | Listed below | Only environments that have any show them |
@@ -96,7 +96,7 @@ A bike on a stand covers ground slowly compared with how fast a screen feels it 
 | Pedalcraft Island | x1.00 | The aircraft are already geared (5, 3 and 7 metres flown for each metre ridden); a higher number shortens each leg in proportion |
 | Night Streets | x2.00 | Blocks are 100 m long, so at life size a junction comes up only every half minute |
 
-These defaults are first guesses. The **Speed** row of the settings screen changes it for one environment: minus and plus step it by 0.25, and the box between them shows the speed in force with the environment's default written under it. Tapping the box goes back to the default. A speed the rider has set is kept as their own number; one left at the default follows the default if a later version changes it. To suggest a better default, quote the two numbers from that box (for example "Night Streets: x2.75, default x2.00").
+These defaults are first guesses. The **Speed** row of the settings screen changes it for one environment: minus and plus step it (by 0.25 up to x5, by 1 up to x20 and by 5 from there to x100), and the box between them shows the speed in force with the environment's default written under it. Tapping the box goes back to the default. A speed the rider has set is kept as their own number; one left at the default follows the default if a later version changes it. To suggest a better default, quote the two numbers from that box (for example "Night Streets: x2.75, default x2.00").
 
 In code: `Environment(speedScale = ...)` is the default, `EnvironmentSettings.speedScale` the rider's own (null for the default), and the game puts the one in force in `RideState.worldScale`. A scene moves by `RideState.worldSpeed` and `RideState.worldDistanceMeters` and leaves `speed` and `distanceMeters` to the HUD. `--list-envs` on the desktop prints each default.
 

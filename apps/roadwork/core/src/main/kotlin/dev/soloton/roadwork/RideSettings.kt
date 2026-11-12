@@ -88,8 +88,11 @@ class EnvironmentSettings(
      * multiple of the step and staying within what a ride allows.
      */
     fun withSpeedStepped(up: Boolean, environment: Environment): EnvironmentSettings {
-        val steps = Math.round(speedScaleFor(environment) / SPEED_STEP) + if (up) 1 else -1
-        return withSpeedScale((steps * SPEED_STEP).coerceIn(RideState.MIN_WORLD_SCALE, RideState.MAX_WORLD_SCALE))
+        val now = speedScaleFor(environment)
+        // The step that applies in the direction of travel: going down from exactly 5 is a small step.
+        val step = speedStep(if (up) now else now - 1e-3f)
+        val steps = if (up) Math.floor((now / step + 1e-3f).toDouble()).toInt() + 1 else Math.ceil((now / step - 1e-3f).toDouble()).toInt() - 1
+        return withSpeedScale((steps * step).coerceIn(RideState.MIN_WORLD_SCALE, RideState.MAX_WORLD_SCALE))
     }
 
     /** The goal's distance in metres, or 0 if the goal is not a distance. */
@@ -126,6 +129,16 @@ class EnvironmentSettings(
 
         /** How much one press of the speed's minus or plus changes it. */
         const val SPEED_STEP = 0.25f
+
+        /**
+         * The size of a step at [scale]: [SPEED_STEP] below x5, whole numbers from there to x20 and
+         * fives above, so the whole range is about fifty presses.
+         */
+        fun speedStep(scale: Float): Float = when {
+            scale < 5f -> SPEED_STEP
+            scale < 20f -> 1f
+            else -> 5f
+        }
 
         /** The next value up or down [values] from [current] (which need not be in it), stopping at the ends. */
         internal fun step(values: IntArray, current: Int, up: Boolean): Int =
