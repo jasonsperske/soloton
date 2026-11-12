@@ -80,7 +80,7 @@ class RideState(initialSpeed: Float) {
 
         /** The least and most an environment's world may be scaled against the bike. */
         const val MIN_WORLD_SCALE = 0.25f
-        const val MAX_WORLD_SCALE = 10f
+        const val MAX_WORLD_SCALE = 100f
         /** A 700c road wheel. */
         const val WHEEL_RADIUS = 0.34f
         /**

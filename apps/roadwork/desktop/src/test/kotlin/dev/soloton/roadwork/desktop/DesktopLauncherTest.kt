@@ -74,7 +74,7 @@ class DesktopLauncherTest {
         assertEquals(null, parseArgs(emptyArray()).settingsFor(plain).speedScale)
         assertEquals(2.75f, parseArgs(arrayOf("--speed", "2.75")).settingsFor(plain).speedScale)
         assertEquals(2.75f, parseArgs(arrayOf("--speed", "2.75")).settingsFor(plain).speedScaleFor(plain))
-        for (bad in listOf("0", "-1", "11", "quick")) assertFailsWith<IllegalArgumentException>(bad) { parseArgs(arrayOf("--speed", bad)) }
+        for (bad in listOf("0", "-1", "101", "quick")) assertFailsWith<IllegalArgumentException>(bad) { parseArgs(arrayOf("--speed", bad)) }
 
         // --settings alone opens them over the picker; with --env, over that ride.
         assertTrue(parseArgs(arrayOf("--settings", "--screenshot", "/tmp/x.png")).startsOnPicker)

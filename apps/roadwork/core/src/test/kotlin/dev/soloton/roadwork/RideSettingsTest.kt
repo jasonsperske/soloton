@@ -115,12 +115,27 @@ class RideSettingsTest {
     fun speedStepsLandOnQuartersAndStayWithinWhatARideAllows() {
         val odd = Environment("odd", "Odd", null, speedScale = 1.6f) { seed -> FakeScene("odd", seed, log) }
         assertEquals(1.75f, EnvironmentSettings().withSpeedStepped(up = true, odd).speedScale, "from 1.6 the next quarter up")
-        assertEquals(1.25f, EnvironmentSettings().withSpeedStepped(up = false, odd).speedScale)
+        assertEquals(1.5f, EnvironmentSettings().withSpeedStepped(up = false, odd).speedScale, "and the next quarter down")
+        // Quarters to x5, whole numbers to x20, fives to the top: the same stops up and down.
         var s = EnvironmentSettings()
-        repeat(80) { s = s.withSpeedStepped(up = true, plain) }
+        val up = ArrayList<Float>()
+        repeat(80) { s = s.withSpeedStepped(up = true, plain); if (up.lastOrNull() != s.speedScale) up.add(s.speedScale!!) }
         assertEquals(RideState.MAX_WORLD_SCALE, s.speedScale)
-        repeat(80) { s = s.withSpeedStepped(up = false, plain) }
+        assertEquals(100f, RideState.MAX_WORLD_SCALE)
+        assertEquals(listOf(1.25f, 1.5f, 1.75f, 2f), up.take(4))
+        assertEquals(listOf(4.75f, 5f, 6f, 7f), up.subList(up.indexOf(4.75f), up.indexOf(4.75f) + 4))
+        assertEquals(listOf(19f, 20f, 25f, 30f), up.subList(up.indexOf(19f), up.indexOf(19f) + 4))
+        assertEquals(listOf(90f, 95f, 100f), up.takeLast(3))
+        assertTrue(up.size <= 50, "the whole way up is ${up.size} presses")
+        val down = ArrayList<Float>()
+        repeat(80) { s = s.withSpeedStepped(up = false, plain); if (down.lastOrNull() != s.speedScale) down.add(s.speedScale!!) }
         assertEquals(RideState.MIN_WORLD_SCALE, s.speedScale)
+        assertEquals((listOf(1f) + up).dropLast(1).reversed().filter { it >= 1f }, down.filter { it >= 1f })
+        // From between stops, to the next stop in that direction.
+        assertEquals(15f, EnvironmentSettings().withSpeedScale(14.5f).withSpeedStepped(up = true, plain).speedScale)
+        assertEquals(14f, EnvironmentSettings().withSpeedScale(14.5f).withSpeedStepped(up = false, plain).speedScale)
+        assertEquals(45f, EnvironmentSettings().withSpeedScale(42f).withSpeedStepped(up = true, plain).speedScale)
+        assertEquals(40f, EnvironmentSettings().withSpeedScale(42f).withSpeedStepped(up = false, plain).speedScale)
 
         // A saved speed that makes no sense is ignored.
         for (bad in listOf("fast", "0", "-2", "400", "NaN", "")) {
@@ -129,7 +144,7 @@ class RideSettingsTest {
             assertEquals(null, EnvironmentSettingsStore(backing).load(plain).speedScale, "saved speed '$bad'")
         }
         assertFailsWith<IllegalArgumentException> { Environment("still", "Still", null, speedScale = 0f) { seed -> FakeScene("still", seed, log) } }
-        assertFailsWith<IllegalArgumentException> { Environment("warp", "Warp", null, speedScale = 50f) { seed -> FakeScene("warp", seed, log) } }
+        assertFailsWith<IllegalArgumentException> { Environment("warp", "Warp", null, speedScale = 500f) { seed -> FakeScene("warp", seed, log) } }
     }
 
     @Test
@@ -153,7 +168,7 @@ class RideSettingsTest {
         repeat(1200) { other.step(1f / 60f, 3f) }
         assertEquals(other.crankAngle, before, 1e-3f)
 
-        for (bad in listOf(Float.NaN to 1f, 0f to RideState.MIN_WORLD_SCALE, -3f to RideState.MIN_WORLD_SCALE, 99f to RideState.MAX_WORLD_SCALE)) {
+        for (bad in listOf(Float.NaN to 1f, 0f to RideState.MIN_WORLD_SCALE, -3f to RideState.MIN_WORLD_SCALE, 999f to RideState.MAX_WORLD_SCALE)) {
             ride.worldScale = bad.first
             assertEquals(bad.second, ride.worldScale, "scale ${bad.first}")
         }
@@ -171,6 +186,7 @@ class RideSettingsTest {
         assertEquals("x1.50", text { RideText.scale(it, 1.5f) })
         assertEquals("x2.25", text { RideText.scale(it, 2.25f) })
         assertEquals("x10.00", text { RideText.scale(it, 10f) })
+        assertEquals("x100.00", text { RideText.scale(it, 100f) })
         assertEquals("x0.25", text { RideText.scale(it, 0.25f) })
     }
 

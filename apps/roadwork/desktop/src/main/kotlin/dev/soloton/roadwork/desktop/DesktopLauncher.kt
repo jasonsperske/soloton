@@ -47,7 +47,7 @@ Ride keys: space pause, left/right pace, R/F raise or lower resistance, N skip, 
 --units         the units of that environment: km (default) or miles
 --goal          its goal: free (default), distance:<n> in those units, or time:<minutes>
 --option        one of its own options, for example craft=random for pedalcraft-island
---speed         its speed: metres of world for each metre pedalled, 0.25 to 10 (default: the
+--speed         its speed: metres of world for each metre pedalled, 0.25 to 100 (default: the
                 environment's own; --list-envs shows them)
                 (settings are not saved between runs of the desktop launcher)
 --resistance    the bike's resistance in percent to start with, default 0 (environments that use
