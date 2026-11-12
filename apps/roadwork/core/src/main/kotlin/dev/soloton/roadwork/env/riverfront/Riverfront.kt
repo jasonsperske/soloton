@@ -11,5 +11,7 @@ object Riverfront {
         id = "riverfront",
         title = "Riverfront Roadwork",
         musicFolder = "Mike Tyson's Punch-Out!!",
+        // A narrow path with trees, posts and a jogger close by reads as fast already; a little over life size.
+        speedScale = 1.5f,
     ) { seed -> RiverfrontScene(seed) }
 }

@@ -142,6 +142,10 @@
     {
       "time": "2026-11-11T14:30:00Z",
       "text": "Settings screen per environment: music, units, goal and the environment's own options, saved on the tablet. The picker's Music button is now a gear. Checked on desktop only."
+    },
+    {
+      "time": "2026-11-11T23:50:00Z",
+      "text": "Speed setting per environment: the world goes by at the bike's speed times a number (riverfront x1.5, Skylift Mesa x2.5, Pedalcraft Island x1, Night Streets x2: first guesses), adjustable on the settings screen, which shows the value and the default. The HUD still shows the bike's own speed and distance. Checked on desktop only."
     }
   ]
 }

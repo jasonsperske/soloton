@@ -15,7 +15,8 @@ import kotlin.math.sqrt
  *   every light is red for a moment, so the junction empties;
  * - waits to turn left until nothing is coming the other way;
  * - keeps a gap behind whatever is ahead of it, cars and the rider alike;
- * - does not enter a junction while the rider is within [RIDER_PRIORITY] metres of its middle, so
+ * - does not enter a junction while the rider is within [RIDER_PRIORITY] metres of its middle
+ *   (or [RIDER_PRIORITY_SECONDS] seconds' ride from it, for a rider going fast), so
  *   the rider, who cannot stop for a light, always has the junction to themself.
  *
  * Everything advances only in [step]; nothing allocates there.
@@ -81,7 +82,9 @@ class CityTraffic(private val seed: Long) {
                 // The rider is near this junction, coming or going (it need not be the one their leg passes through).
                 val rdx = rider.x - nodeX[i] * CityGrid.PERIOD
                 val rdz = rider.z - nodeZ[i] * CityGrid.PERIOD
-                val blockedByRider = rdx * rdx + rdz * rdz < RIDER_PRIORITY * RIDER_PRIORITY
+                // A faster rider is given the junction from further off: the same few seconds' warning.
+                val priority = maxOf(RIDER_PRIORITY, rider.speed * RIDER_PRIORITY_SECONDS)
+                val blockedByRider = rdx * rdx + rdz * rdz < priority * priority
                 // Green, with enough of it left to get across before the other street goes.
                 val green = CityGrid.greenRemaining(nodeX[i], nodeZ[i], time, seed, CityGrid.axis(inDir[i])) > ENTER_MARGIN_SECONDS
                 if (!green || blockedByRider || (turn[i] == CityGrid.LEFT && oncoming(i))) {
@@ -231,6 +234,9 @@ class CityTraffic(private val seed: Long) {
 
         /** No car enters a junction while the rider is this close to its middle. */
         const val RIDER_PRIORITY = 25f
+
+        /** ...or this many seconds' ride from it, whichever is further, so a fast rider gets the same warning. */
+        const val RIDER_PRIORITY_SECONDS = 4f
 
         /** A car checks its path at points this far apart, this many of them, and leaves this gap behind what it finds. */
         const val PATH_STEP = 2.5f

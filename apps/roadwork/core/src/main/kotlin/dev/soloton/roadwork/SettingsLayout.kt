@@ -12,12 +12,13 @@ import com.badlogic.gdx.math.Rectangle
  *  +---------------------------------------------------------------------+
  *  | Music      14 of 20 songs from 1 folder          [  Choose music  ] |
  *  | Units      [ Kilometres ] [   Miles   ]                             |
+ *  | Speed      [ - ]   x2.25  (default x2.00, tap to reset)   [ + ]     |
  *  | Goal       [ Free ride ] [ Distance ] [   Time   ]                  |
  *  |            [ - ]   10 km   [ + ]                                    |
  *  | Aircraft   [ < ]   In turn: glider, paramotor, plane   [ > ]        |
  *  +---------------------------------------------------------------------+
  * ```
- * One row each for music, units, the goal and the goal's amount, then one per option of the
+ * One row each for music, units, speed, the goal and the goal's amount, then one per option of the
  * environment (up to [MAX_OPTIONS]). Every control is at least [MIN_TOUCH] pixels each way.
  */
 class SettingsLayout {
@@ -28,7 +29,7 @@ class SettingsLayout {
     val header = Rectangle()
     val done = Rectangle()
 
-    /** The panel behind each row, top to bottom: music, units, goal, goal amount, then the options. */
+    /** The panel behind each row, top to bottom: music, units, speed, goal, goal amount, then the options. */
     var rows: List<Rectangle> = emptyList()
         private set
 
@@ -40,6 +41,11 @@ class SettingsLayout {
     val musicButton = Rectangle()
     val units = Array(Units.entries.size) { Rectangle() }
     val goals = Array(GoalKind.entries.size) { Rectangle() }
+
+    /** Slower, the box showing the speed (tapping it goes back to the environment's own), and faster. */
+    val speedLess = Rectangle()
+    val speedValue = Rectangle()
+    val speedMore = Rectangle()
     val amountLess = Rectangle()
     val amountValue = Rectangle()
     val amountMore = Rectangle()
@@ -54,7 +60,7 @@ class SettingsLayout {
 
     /** Every control that can be tapped, for overlap and size checks. */
     fun controls(): List<Rectangle> =
-        listOf(done, musicButton, amountLess, amountMore) + units + goals + optionPrevious + optionNext
+        listOf(done, musicButton, speedLess, speedMore, amountLess, amountMore) + units + goals + optionPrevious + optionNext
 
     fun layout(optionCount: Int, screenWidth: Int, screenHeight: Int) {
         require(optionCount in 0..MAX_OPTIONS) { "the settings screen holds up to $MAX_OPTIONS options, not $optionCount" }
@@ -91,6 +97,12 @@ class SettingsLayout {
         for (i in units.indices) units[i].set(controlsLeft + i * (UNIT_WIDTH + CONTROL_GAP), controlY(ROW_UNITS), UNIT_WIDTH, CONTROL)
         for (i in goals.indices) goals[i].set(controlsLeft + i * (GOAL_WIDTH + CONTROL_GAP), controlY(ROW_GOAL), GOAL_WIDTH, CONTROL)
 
+        speedLess.set(controlsLeft, controlY(ROW_SPEED), CONTROL, CONTROL)
+        val speedLeft = controlsLeft + CONTROL + CONTROL_GAP
+        val speedWidth = (controlsRight - CONTROL - CONTROL_GAP - speedLeft).coerceAtMost(SPEED_VALUE_MAX_WIDTH)
+        speedValue.set(speedLeft, controlY(ROW_SPEED), speedWidth, CONTROL)
+        speedMore.set(speedLeft + speedWidth + CONTROL_GAP, controlY(ROW_SPEED), CONTROL, CONTROL)
+
         amountLess.set(controlsLeft, controlY(ROW_AMOUNT), CONTROL, CONTROL)
         amountValue.set(amountLess.x + CONTROL + CONTROL_GAP, controlY(ROW_AMOUNT), AMOUNT_WIDTH, CONTROL)
         amountMore.set(amountValue.x + AMOUNT_WIDTH + CONTROL_GAP, controlY(ROW_AMOUNT), CONTROL, CONTROL)
@@ -108,20 +120,22 @@ class SettingsLayout {
     companion object {
         const val HEIGHT = HudLayout.HEIGHT
         const val MARGIN = 36f
-        const val GAP = 24f
+        const val GAP = 12f
         const val HEADER_HEIGHT = 112f
         const val DONE_WIDTH = 260f
 
-        /** The rows that every environment has: music, units, goal, goal amount. */
-        const val FIXED_ROWS = 4
+        /** The rows that every environment has: music, units, speed, goal, goal amount. */
+        const val FIXED_ROWS = 5
         const val ROW_MUSIC = 0
         const val ROW_UNITS = 1
-        const val ROW_GOAL = 2
-        const val ROW_AMOUNT = 3
+        const val ROW_SPEED = 2
+        const val ROW_GOAL = 3
+        const val ROW_AMOUNT = 4
         const val MAX_OPTIONS = 2
 
-        const val ROW_HEIGHT = 128f
-        const val ROW_GAP = 12f
+        // Seven rows of full-height controls just fit under the heading: the rows are close together.
+        const val ROW_HEIGHT = 120f
+        const val ROW_GAP = 7f
         const val ROW_PAD = 16f
         const val LABEL_WIDTH = 300f
 
@@ -132,6 +146,7 @@ class SettingsLayout {
         const val UNIT_WIDTH = 300f
         const val GOAL_WIDTH = 250f
         const val AMOUNT_WIDTH = 280f
+        const val SPEED_VALUE_MAX_WIDTH = 760f
         const val OPTION_VALUE_MAX_WIDTH = 900f
 
         /** Smallest touch target, in pixels on the 1080-line screen. */

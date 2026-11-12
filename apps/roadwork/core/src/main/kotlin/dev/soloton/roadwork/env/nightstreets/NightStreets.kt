@@ -11,5 +11,7 @@ object NightStreets {
         id = "night-streets",
         title = "Night Streets",
         musicFolder = "Sim City",
+        // Blocks are 100 m: at life size an easy pedal takes half a minute to cross one. Twice that is city cycling.
+        speedScale = 2f,
     ) { seed -> NightStreetsScene(seed) }
 }

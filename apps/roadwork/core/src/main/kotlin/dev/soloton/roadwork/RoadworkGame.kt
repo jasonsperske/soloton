@@ -102,6 +102,7 @@ class RoadworkGame(
             onEnvironmentChanged(next)
         },
         options = { environmentSettings.load(it).options },
+        worldScale = { environmentSettings.load(it).speedScaleFor(it) },
     )
 
     /** The environment being ridden (on the picker: the one ridden last). Safe to read from any thread. */
@@ -167,6 +168,7 @@ class RoadworkGame(
             val session = flow.session
             if (session != null && session.host.environment.id == environment.id) {
                 hud.setSettings(settings)
+                session.ride.worldScale = settings.speedScaleFor(environment)
                 session.host.refreshOptions()
             }
         }

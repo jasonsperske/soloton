@@ -141,7 +141,7 @@ class NightStreetsScene(private val seed: Long) : EnvironmentScene {
     }
 
     override fun step(dt: Float, ride: RideState) {
-        rider.step(dt, ride.speed)
+        rider.step(dt, ride.worldSpeed)
         traffic.step(dt, rider)
     }
 

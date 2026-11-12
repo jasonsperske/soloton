@@ -36,6 +36,10 @@ class CityRider(private val seed: Long) {
     var heading = 0f
         private set
 
+    /** How fast the rider is going, in metres per second, as of the last [step]. */
+    var speed = 0f
+        private set
+
     /** How fast the heading is changing, in radians per second: positive turning right. */
     var turnRate = 0f
         private set
@@ -59,7 +63,8 @@ class CityRider(private val seed: Long) {
 
     fun step(dt: Float, speed: Float) {
         val before = heading
-        along += speed.coerceAtLeast(0f) * dt
+        this.speed = speed.coerceAtLeast(0f)
+        along += this.speed * dt
         while (along >= legLength) {
             along -= legLength
             val out = CityGrid.outDir(inDir, turn)

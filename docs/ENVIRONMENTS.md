@@ -44,7 +44,7 @@ The ride is a tour of three legs that join end to end and then repeat:
 | 2 | Pedal paramotor: an arched canopy over a caged propeller | Beach | Airfield, southern plain | 22 min | 30 m | 90 m |
 | 3 | Pedal plane: a high-winged ultralight | Airfield | Hill strip | 20 min | 130 m | 300 m |
 
-- **Pedalling** turns the propeller. The craft flies 5, 3 or 7 metres (glider, paramotor, plane) for every metre ridden, so the HUD's speed and distance are the bike's, not the craft's. Stop pedalling and the craft hangs where it is until you start again. The time for a leg scales with pace: at 2.5 m/s the three take about 29, 26 and 24 minutes, and at 4 m/s about 18, 16 and 15.
+- **Pedalling** turns the propeller. The craft flies 5, 3 or 7 metres (glider, paramotor, plane) for every metre ridden (times the environment's [speed](#speed) setting, x1.00 unless changed), so the HUD's speed and distance are the bike's, not the craft's. Stop pedalling and the craft hangs where it is until you start again. The time for a leg scales with pace: at 2.5 m/s the three take about 29, 26 and 24 minutes, and at 4 m/s about 18, 16 and 15.
 - **Height** comes from the route, which follows the terrain: each craft cruises its own distance above the highest ground near its path, so the paramotor skims the land and the plane rides high over it.
 - **Resistance** adds height on top, in proportion, up to the craft's range with the knob at its end. It needs pedalling to hold: below 1.5 m/s the extra height fades, and the craft settles back to its cruising height.
 - **Take-off and landing** are flown for you. A craft rolls along its strip, climbs out, circles the island, lines up, descends without dropping below any ground still ahead of it, touches down and rolls to a stop. The next craft then starts from the same spot.
@@ -72,6 +72,7 @@ Each environment has its own settings ([screenshot](../apps/roadwork/docs/settin
 |---|---|---|
 | **Music** | **Choose music** opens the folders and songs for this environment ([INSTALL.md](INSTALL.md#choosing-folders-and-songs-on-the-tablet)) | The line beside it says how many songs are chosen, or in amber why nothing would play |
 | **Units** | Kilometres or miles | The HUD shows distance, speed (km/h or mph) and pace (per km or per mile) in them ([screenshot](../apps/roadwork/docs/ride-miles-goal.png)) |
+| **Speed** | x0.25 to x10.00, in steps of 0.25 | How fast the world goes by for the speed pedalled: see [Speed](#speed) |
 | **Goal** | Free ride, a distance, or a time | With a goal, the HUD's stats panel names it and a bar fills toward it. When it is reached the bar turns green and a banner says so for a few seconds; the ride carries on |
 | **How far / How long** | 1 to 100 km or miles; 5 to 120 minutes | The goal's amount, stepped with the minus and plus buttons. The number is kept if the units change (10 km becomes 10 miles) |
 | The environment's own options | Listed below | Only environments that have any show them |
@@ -82,7 +83,22 @@ Environments with their own options:
 |---|---|---|
 | Pedalcraft Island | **Aircraft** | In turn (glider, paramotor, plane), a random one each leg, or always the glider, the paramotor or the plane. Changed during a flight, it starts with the next leg |
 
-Settings are saved per environment: on the tablet in the app's preferences, so they survive a restart; the desktop launcher forgets them when it closes, and takes `--units`, `--goal` and `--option` to set them for one run (`--settings` opens the screen).
+Settings are saved per environment: on the tablet in the app's preferences, so they survive a restart; the desktop launcher forgets them when it closes, and takes `--units`, `--speed`, `--goal` and `--option` to set them for one run (`--settings` opens the screen).
+
+### Speed
+
+A bike on a stand covers ground slowly compared with how fast a screen feels it should move, so each environment multiplies the bike's speed by a number of its own before moving the world: at x2.00 the scenery goes by twice as fast as the bike is going. The HUD is not scaled. Its speed, pace and distance are the bike's own, and a distance goal counts the bike's own distance.
+
+| Environment | Default speed | Why |
+|---|---|---|
+| Riverfront Roadwork | x1.50 | An open path with far-off scenery: a little faster than life |
+| Skylift Mesa | x2.50 | A wide flat desert seen from behind a runner, with little close by to judge speed against |
+| Pedalcraft Island | x1.00 | The aircraft are already geared (5, 3 and 7 metres flown for each metre ridden); a higher number shortens each leg in proportion |
+| Night Streets | x2.00 | Blocks are 100 m long, so at life size a junction comes up only every half minute |
+
+These defaults are first guesses. The **Speed** row of the settings screen changes it for one environment: minus and plus step it by 0.25, and the box between them shows the speed in force with the environment's default written under it. Tapping the box goes back to the default. A speed the rider has set is kept as their own number; one left at the default follows the default if a later version changes it. To suggest a better default, quote the two numbers from that box (for example "Night Streets: x2.75, default x2.00").
+
+In code: `Environment(speedScale = ...)` is the default, `EnvironmentSettings.speedScale` the rider's own (null for the default), and the game puts the one in force in `RideState.worldScale`. A scene moves by `RideState.worldSpeed` and `RideState.worldDistanceMeters` and leaves `speed` and `distanceMeters` to the HUD. `--list-envs` on the desktop prints each default.
 
 How it fits together: `EnvironmentSettings` holds one environment's units, goal and option choices, and `EnvironmentSettingsStore` loads and saves it in a `SettingsStore` (`libs/api`) that the launcher supplies. `SettingsScreen` draws the screen from positions in `SettingsLayout`. An environment declares what it offers with `Environment(options = listOf(EnvironmentOption(...)))`, up to two of them, and its scene receives the rider's choices through `EnvironmentScene.applyOptions`, before it is created and again whenever they change. `RideText` words the HUD's numbers in either unit.
 
@@ -133,7 +149,7 @@ Each environment has a playlist, keyed by its id: an ordered list of folders and
 | `PlatformActions.openMusicSettings(playlist)` | `libs/api`, implemented by the launcher | Opens the settings screen for that playlist |
 | `MusicSelection`, `SelectionStore`, `SelectionResolver` | `libs/music/.../MusicSelection.kt` | The saved folders and unticked songs, and what they come to on disk |
 
-Shared building blocks a scene can use, all in `dev.soloton.roadwork`: `MeshWriter` and `SceneMeshes` (flat-shaded vertex-colour meshes), `Shaders` (the scene shader with sun, hemisphere ambient and fog), `Rng` (deterministic random numbers), `ChunkTrack` (recycling stretches of an endless path), `RiderCamera` (the view from the saddle), `RideState` (time, distance, speed, resistance, wheel and crank angles).
+Shared building blocks a scene can use, all in `dev.soloton.roadwork`: `MeshWriter` and `SceneMeshes` (flat-shaded vertex-colour meshes), `Shaders` (the scene shader with sun, hemisphere ambient and fog), `Rng` (deterministic random numbers), `ChunkTrack` (recycling stretches of an endless path), `RiderCamera` (the view from the saddle), `RideState` (time, distance, speed, the world's scaled speed and distance, resistance, wheel and crank angles).
 
 Rules for a scene:
 

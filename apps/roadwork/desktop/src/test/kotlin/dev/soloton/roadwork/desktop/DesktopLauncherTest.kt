@@ -38,7 +38,7 @@ class DesktopLauncherTest {
         assertEquals(Environments.all.size, lines.size)
         // Columns are padded to the longest id and title.
         assertEquals(
-            listOf("riverfront", "Riverfront Roadwork", "music: Mike Tyson's Punch-Out!!", "[default]"),
+            listOf("riverfront", "Riverfront Roadwork", "music: Mike Tyson's Punch-Out!!", "speed: x1.5", "[default]"),
             lines.first().split(Regex(" {2,}")),
         )
         for ((line, e) in lines.zip(Environments.all)) {
@@ -70,6 +70,12 @@ class DesktopLauncherTest {
         for (bad in listOf(arrayOf("--units", "leagues"), arrayOf("--goal", "far"), arrayOf("--goal", "distance:0"), arrayOf("--goal", "time:"), arrayOf("--option", "craft"), arrayOf("--option", "=x"), arrayOf("--units"))) {
             assertFailsWith<IllegalArgumentException>(bad.joinToString(" ")) { parseArgs(bad) }
         }
+        // Speed: the environment's own unless one is given.
+        assertEquals(null, parseArgs(emptyArray()).settingsFor(plain).speedScale)
+        assertEquals(2.75f, parseArgs(arrayOf("--speed", "2.75")).settingsFor(plain).speedScale)
+        assertEquals(2.75f, parseArgs(arrayOf("--speed", "2.75")).settingsFor(plain).speedScaleFor(plain))
+        for (bad in listOf("0", "-1", "11", "quick")) assertFailsWith<IllegalArgumentException>(bad) { parseArgs(arrayOf("--speed", bad)) }
+
         // --settings alone opens them over the picker; with --env, over that ride.
         assertTrue(parseArgs(arrayOf("--settings", "--screenshot", "/tmp/x.png")).startsOnPicker)
         assertFalse(parseArgs(arrayOf("--settings", "--env", "riverfront")).startsOnPicker)

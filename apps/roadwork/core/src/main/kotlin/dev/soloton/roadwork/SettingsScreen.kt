@@ -27,7 +27,8 @@ import dev.soloton.api.PlaylistSummary
  * or cancel; Done (or Escape, or Android's back button) just closes the screen. Positions come
  * from [SettingsLayout]; text is drawn the way the HUD draws it.
  *
- * Keys: Enter, Escape or back close; U changes the units; G changes the kind of goal; minus and
+ * Keys: Enter, Escape or back close; U changes the units; comma and full stop slow and quicken
+ * the speed, and 0 puts it back to the environment's own; G changes the kind of goal; minus and
  * plus (or left and right) change the goal's amount; M opens the music settings.
  */
 internal class SettingsScreen(
@@ -62,6 +63,9 @@ internal class SettingsScreen(
     private val summaryText = GlyphLayout()
     private var shownSummary: PlaylistSummary? = null
     private val amountText = GlyphLayout()
+    private val speedText = GlyphLayout()
+    private val speedNote = GlyphLayout()
+    private val sb = StringBuilder(48)
     private val unitTexts = Array(Units.entries.size) { GlyphLayout() }
     private val goalTexts = Array(GoalKind.entries.size) { GlyphLayout() }
     private val labelTexts = Array(SettingsLayout.FIXED_ROWS + SettingsLayout.MAX_OPTIONS) { GlyphLayout() }
@@ -106,6 +110,20 @@ internal class SettingsScreen(
         shownSummary = null
         text(labelTexts[SettingsLayout.ROW_MUSIC], "Music", SCALE_LABEL, Color.WHITE)
         text(labelTexts[SettingsLayout.ROW_UNITS], "Units", SCALE_LABEL, Color.WHITE)
+        text(labelTexts[SettingsLayout.ROW_SPEED], "Speed", SCALE_LABEL, Color.WHITE)
+        // The speed in force, large, and under it what the environment's own is: the two numbers to
+        // quote when asking for the default to be changed.
+        RideText.scale(sb, settings.speedScaleFor(e))
+        text(speedText, sb, SCALE_VALUE, Color.WHITE)
+        RideText.scale(sb, e.speedScale)
+        if (settings.speedScale == null || settings.speedScale == e.speedScale) {
+            sb.insert(0, "the default, ")
+            sb.append(": world speed for each unit of pedal speed")
+        } else {
+            sb.insert(0, "default ")
+            sb.append(", tap here to go back to it")
+        }
+        text(speedNote, sb, SCALE_NOTE, TEXT_DIM, layout.speedValue.width - 32f)
         text(labelTexts[SettingsLayout.ROW_GOAL], "Goal", SCALE_LABEL, Color.WHITE)
         val amountLabel = when (settings.goalKind) {
             GoalKind.DISTANCE -> "How far"
@@ -157,6 +175,14 @@ internal class SettingsScreen(
             shapes.color = if (g == settings.goalKind) ACCENT else BUTTON
             round(layout.goals[g.ordinal])
         }
+        shapes.color = BUTTON
+        round(layout.speedLess)
+        round(layout.speedMore)
+        shapes.color = VALUE
+        round(layout.speedValue)
+        shapes.color = Color.WHITE
+        minus(layout.speedLess)
+        plus(layout.speedMore)
         if (!free) {
             shapes.color = BUTTON
             round(layout.amountLess)
@@ -191,6 +217,9 @@ internal class SettingsScreen(
         centred(musicButtonText, SCALE_BUTTON, layout.musicButton)
         for (u in Units.entries) centred(unitTexts[u.ordinal], SCALE_BUTTON, layout.units[u.ordinal])
         for (g in GoalKind.entries) centred(goalTexts[g.ordinal], SCALE_BUTTON, layout.goals[g.ordinal])
+        val speedBox = layout.speedValue
+        draw(speedText, SCALE_VALUE, speedBox.x + (speedBox.width - speedText.width) / 2f, speedBox.y + speedBox.height - 18f)
+        draw(speedNote, SCALE_NOTE, speedBox.x + (speedBox.width - speedNote.width) / 2f, speedBox.y + 14f + speedNote.height)
         if (!free) centred(amountText, SCALE_VALUE, layout.amountValue)
         for (o in e.options.indices) {
             val box = layout.optionValue[o]
@@ -277,6 +306,9 @@ internal class SettingsScreen(
         when {
             layout.done.contains(x, y) -> listener.onDone()
             layout.musicButton.contains(x, y) -> listener.onMusic(e)
+            layout.speedLess.contains(x, y) -> change(settings.withSpeedStepped(up = false, e))
+            layout.speedMore.contains(x, y) -> change(settings.withSpeedStepped(up = true, e))
+            layout.speedValue.contains(x, y) -> change(settings.withSpeedScale(null))
             settings.goalKind != GoalKind.FREE && layout.amountLess.contains(x, y) -> change(settings.withGoalStepped(up = false))
             settings.goalKind != GoalKind.FREE && layout.amountMore.contains(x, y) -> change(settings.withGoalStepped(up = true))
             else -> {
@@ -302,6 +334,9 @@ internal class SettingsScreen(
             Input.Keys.G -> change(settings.withGoalKind(GoalKind.entries[(settings.goalKind.ordinal + 1) % GoalKind.entries.size]))
             Input.Keys.LEFT, Input.Keys.MINUS -> change(settings.withGoalStepped(up = false))
             Input.Keys.RIGHT, Input.Keys.PLUS, Input.Keys.EQUALS -> change(settings.withGoalStepped(up = true))
+            Input.Keys.COMMA -> change(settings.withSpeedStepped(up = false, e))
+            Input.Keys.PERIOD -> change(settings.withSpeedStepped(up = true, e))
+            Input.Keys.NUM_0 -> change(settings.withSpeedScale(null))
             Input.Keys.O -> cycle(0, 1)
             else -> return false
         }

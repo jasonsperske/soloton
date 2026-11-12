@@ -15,6 +15,9 @@ import dev.soloton.api.PlaylistRef
  * @param musicFolder the sub-folder of the music root whose songs play here until the rider chooses
  *   other folders or songs in music settings (a folder name, taken literally), or null to start
  *   with everything under the root
+ * @param speedScale how many metres of this world go by for each metre the bike covers, until the
+ *   rider changes it in the environment's settings. 1 is life size. An open place where there is
+ *   little near the rider to judge speed by wants more than a narrow one
  * @param options what the rider can choose about this environment in its settings, beyond the
  *   units and goal every environment has; the chosen values reach the scene through
  *   [EnvironmentScene.applyOptions]
@@ -25,6 +28,7 @@ class Environment(
     val title: String,
     val musicFolder: String?,
     val options: List<EnvironmentOption> = emptyList(),
+    val speedScale: Float = 1f,
     private val sceneFactory: (seed: Long) -> EnvironmentScene,
 ) {
     init {
@@ -32,6 +36,7 @@ class Environment(
         require(title.isNotBlank()) { "environment $id needs a title" }
         require(musicFolder == null || musicFolder.isNotBlank()) { "environment $id: musicFolder must be null or a folder name" }
         require(options.map { it.key }.toSet().size == options.size) { "environment $id has two options with the same key" }
+        require(speedScale in RideState.MIN_WORLD_SCALE..RideState.MAX_WORLD_SCALE) { "environment $id: speedScale $speedScale is out of range" }
     }
 
     /** This environment's music: the rider's selection is saved under [id], starting from [musicFolder]. */

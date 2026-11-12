@@ -73,7 +73,7 @@ class RiverfrontScene(private val seed: Long) : EnvironmentScene {
 
     override fun create(ride: RideState) {
         // Start the jogger already running at the rider's pace (a zero-length step sets its speed).
-        jogger.step(0f, ride.elapsedSeconds, ride.speed)
+        jogger.step(0f, ride.elapsedSeconds, ride.worldSpeed)
 
         sceneShader = Shaders.compile(Shaders.SCENE_VERTEX, Shaders.SCENE_FRAGMENT)
         skyShader = Shaders.compile(Shaders.SKY_VERTEX, Shaders.SKY_FRAGMENT)
@@ -133,7 +133,7 @@ class RiverfrontScene(private val seed: Long) : EnvironmentScene {
     }
 
     override fun step(dt: Float, ride: RideState) {
-        jogger.step(dt, ride.elapsedSeconds, ride.speed)
+        jogger.step(dt, ride.elapsedSeconds, ride.worldSpeed)
     }
 
     override fun setInspectionView(name: String?): Boolean {
@@ -144,7 +144,7 @@ class RiverfrontScene(private val seed: Long) : EnvironmentScene {
 
     override fun draw(ride: RideState) {
         val t = ride.elapsedSeconds
-        val distance = ride.distanceMeters
+        val distance = ride.worldDistanceMeters
         sky.update(t)
         track.update(distance) { slot, index -> buildChunk(slot, index) }
         placeCameras(ride)

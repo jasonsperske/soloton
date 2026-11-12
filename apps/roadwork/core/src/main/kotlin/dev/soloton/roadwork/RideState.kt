@@ -12,6 +12,11 @@ import kotlin.math.sin
  * Speed eases toward the pace source over [SPEED_EASE_SECONDS] so a button tap or a cadence change
  * does not jolt the camera. Distance is kept in double so hours of riding stay precise. The wheels
  * turn by distance / radius and the cranks by wheel angle / [GEAR_RATIO].
+ *
+ * There are two speeds. [speed] and [distanceMeters] are the bike's own: what the rider is really
+ * doing, what the HUD shows and what a goal counts. [worldSpeed] and [worldDistanceMeters] are
+ * those times [worldScale]: how fast the scenery goes by. A scene moves its world by the world
+ * values, so an environment can feel as fast as it should without the numbers on screen lying.
  */
 class RideState(initialSpeed: Float) {
     var elapsedSeconds: Double = 0.0
@@ -19,6 +24,23 @@ class RideState(initialSpeed: Float) {
     var distanceMeters: Double = 0.0
         private set
     var speed: Float = initialSpeed.coerceAtLeast(0f)
+        private set
+
+    /**
+     * How many metres of world go by for each metre the bike covers. Set by the game from the
+     * environment's settings; 1 until then. Changing it during a ride changes the speed from then
+     * on and leaves the distance already covered as it is.
+     */
+    var worldScale: Float = 1f
+        set(value) {
+            field = if (value.isNaN()) 1f else value.coerceIn(MIN_WORLD_SCALE, MAX_WORLD_SCALE)
+        }
+
+    /** How fast the scenery goes by, in metres per second: [speed] times [worldScale]. */
+    val worldSpeed: Float get() = speed * worldScale
+
+    /** How far the scenery has gone by, in metres. */
+    var worldDistanceMeters: Double = 0.0
         private set
 
     /** Front and rear wheel rotation in radians, wrapped to [0, 2π). */
@@ -47,6 +69,7 @@ class RideState(initialSpeed: Float) {
         elapsedSeconds += dt
         val metres = speed * dt
         distanceMeters += metres.toDouble()
+        worldDistanceMeters += (metres * worldScale).toDouble()
         wheelAngle = wrap(wheelAngle + wheelAngleFor(metres))
         crankAngle = wrap(crankAngle + crankAngleFor(metres))
     }
@@ -54,6 +77,10 @@ class RideState(initialSpeed: Float) {
     companion object {
         const val SPEED_EASE_SECONDS = 1.2f
         const val RESISTANCE_EASE_SECONDS = 0.6f
+
+        /** The least and most an environment's world may be scaled against the bike. */
+        const val MIN_WORLD_SCALE = 0.25f
+        const val MAX_WORLD_SCALE = 10f
         /** A 700c road wheel. */
         const val WHEEL_RADIUS = 0.34f
         /**

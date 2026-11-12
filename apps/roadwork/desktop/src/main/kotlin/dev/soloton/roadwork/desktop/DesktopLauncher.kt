@@ -9,6 +9,7 @@ import dev.soloton.roadwork.Environment
 import dev.soloton.roadwork.EnvironmentSettings
 import dev.soloton.roadwork.EnvironmentSettingsStore
 import dev.soloton.roadwork.GoalKind
+import dev.soloton.roadwork.RideState
 import dev.soloton.roadwork.Units
 import dev.soloton.roadwork.Environments
 import dev.soloton.roadwork.RoadworkGame
@@ -20,10 +21,12 @@ private const val USAGE = """Usage: roadwork-desktop [--screenshot <out.png> [--
                         [--env <id>] [--picker] [--list-envs] [--view rider|<name>]
                         [--resistance <0-100>] [--settings] [--units km|miles]
                         [--goal free|distance:<n>|time:<minutes>] [--option <key>=<choice>]...
+                        [--speed <x>]
 
 Without arguments, opens a 1280x720 window on the environment picker.
 Picker keys: left/right choose, Enter ride, S settings, Escape quit.
-Settings keys: U units, G goal, left/right goal amount, O first option, M music, Enter or Escape done.
+Settings keys: U units, comma/full stop speed (0 resets it), G goal, left/right goal amount,
+               O first option, M music, Enter or Escape done.
 Ride keys: space pause, left/right pace, R/F raise or lower resistance, N skip, S settings,
            Escape or E back to the picker.
 --screenshot    render one frame offscreen and write it as PNG, then exit: a ride (in --env, or the
@@ -44,6 +47,8 @@ Ride keys: space pause, left/right pace, R/F raise or lower resistance, N skip, 
 --units         the units of that environment: km (default) or miles
 --goal          its goal: free (default), distance:<n> in those units, or time:<minutes>
 --option        one of its own options, for example craft=random for pedalcraft-island
+--speed         its speed: metres of world for each metre pedalled, 0.25 to 10 (default: the
+                environment's own; --list-envs shows them)
                 (settings are not saved between runs of the desktop launcher)
 --resistance    the bike's resistance in percent to start with, default 0 (environments that use
                 it, skylift-mesa and pedalcraft-island, fly higher as it rises)
@@ -159,6 +164,8 @@ internal data class Options(
     val goalAmount: Int? = null,
     /** Choices for the environment's own options, by option key. */
     val options: Map<String, String> = emptyMap(),
+    /** The environment's speed scale, or null for its own. */
+    val speedScale: Float? = null,
 ) {
     /** The settings these flags ask for, for [environment]; throws if an option or choice is not one of its. */
     fun settingsFor(environment: Environment): EnvironmentSettings {
@@ -173,6 +180,7 @@ internal data class Options(
             goalDistance = if (goalKind == GoalKind.DISTANCE) goalAmount ?: EnvironmentSettings.DEFAULT_DISTANCE else EnvironmentSettings.DEFAULT_DISTANCE,
             goalMinutes = if (goalKind == GoalKind.TIME) goalAmount ?: EnvironmentSettings.DEFAULT_MINUTES else EnvironmentSettings.DEFAULT_MINUTES,
             options = options,
+            speedScale = speedScale,
         )
     }
 
@@ -191,6 +199,7 @@ internal fun describeEnvironments(all: List<Environment>, default: Environment):
     for (e in all) {
         append(e.id.padEnd(idWidth)).append("  ").append(e.title.padEnd(titleWidth)).append("  ")
         append(e.musicFolder?.let { "music: $it" } ?: "music: (whole music root)")
+        append("  speed: x").append(e.speedScale)
         if (e === default) append("  [default]")
         append('\n')
     }
@@ -239,6 +248,10 @@ internal fun parseArgs(args: Array<String>): Options {
                     opts.copy(goalKind = if (m.groupValues[1] == "distance") GoalKind.DISTANCE else GoalKind.TIME, goalAmount = amount)
                 }
             }
+            "--speed" -> opts = opts.copy(
+                speedScale = value(a).toFloatOrNull()?.takeIf { it in RideState.MIN_WORLD_SCALE..RideState.MAX_WORLD_SCALE }
+                    ?: throw IllegalArgumentException("--speed needs a number from ${RideState.MIN_WORLD_SCALE} to ${RideState.MAX_WORLD_SCALE}"),
+            )
             "--option" -> {
                 val pair = value(a)
                 val cut = pair.indexOf('=')

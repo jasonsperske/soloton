@@ -126,6 +126,7 @@ internal class Picker(
         var fbo: FrameBuffer? = null
         try {
             val ride = RideState(AdjustablePace.DEFAULT_METERS_PER_SECOND)
+            ride.worldScale = environment.speedScale
             scene.create(ride)
             scene.resize(PREVIEW_WIDTH, PREVIEW_HEIGHT)
             val dt = 1f / 60f
