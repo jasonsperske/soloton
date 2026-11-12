@@ -203,7 +203,8 @@ class CityTest {
 
     @Test
     fun carsDoNotRunIntoEachOtherOrTheRider() {
-        for (riderSpeed in listOf(3f, 6f)) {
+        // Up to 12 m/s: a hard pedal with the city's speed turned well up.
+        for (riderSpeed in listOf(3f, 6f, 12f)) {
             var closestCars = Float.MAX_VALUE
             var closestToRider = Float.MAX_VALUE
             run(20, riderSpeed) { r ->

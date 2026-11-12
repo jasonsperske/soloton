@@ -76,6 +76,134 @@ class RideSettingsTest {
         for (e in Environments.all) assertTrue(e.options.size <= SettingsLayout.MAX_OPTIONS, "${e.id} has ${e.options.size} options")
     }
 
+    // ---- speed ----
+
+    @Test
+    fun anEnvironmentsSpeedIsItsOwnUntilTheRiderSetsOneAndCanBePutBack() {
+        val quick = Environment("quick", "Quick", null, speedScale = 2f) { seed -> FakeScene("quick", seed, log) }
+        val store = EnvironmentSettingsStore(MemorySettingsStore())
+        var s = store.load(quick)
+        assertEquals(null, s.speedScale)
+        assertEquals(2f, s.speedScaleFor(quick))
+        assertEquals(1f, s.speedScaleFor(plain), "an environment that names no speed is life size")
+
+        s = s.withSpeedStepped(up = true, quick)
+        assertEquals(2.25f, s.speedScale)
+        s = s.withSpeedStepped(up = false, quick).withSpeedStepped(up = false, quick).withSpeedStepped(up = false, quick)
+        assertEquals(1.5f, s.speedScaleFor(quick))
+        // It is the rider's own number now, whatever the environment's is, and it is saved.
+        store.save(quick, s)
+        assertEquals(1.5f, store.load(quick).speedScale)
+        assertEquals(1f, store.load(plain).speedScaleFor(plain), "another environment is untouched")
+
+        // Back to the environment's own: saved as "no number", so a later change of default is followed.
+        store.save(quick, s.withSpeedScale(null))
+        assertEquals(null, store.load(quick).speedScale)
+        assertEquals(2f, store.load(quick).speedScaleFor(quick))
+
+        // The rest of the settings travel with it.
+        val all = EnvironmentSettings().withUnits(Units.MILES).withGoalKind(GoalKind.TIME).withSpeedScale(3f)
+        assertEquals(3f, all.withUnits(Units.KILOMETRES).speedScale)
+        assertEquals(3f, all.withGoalStepped(up = true).speedScale)
+        assertEquals(3f, all.withGoalKind(GoalKind.DISTANCE).withGoalStepped(up = true).speedScale)
+        assertEquals(3f, all.withOption("craft", "plane").speedScale)
+        assertEquals(Units.MILES, all.withSpeedScale(4f).units)
+        assertNotEquals(all, all.withSpeedScale(4f))
+    }
+
+    @Test
+    fun speedStepsLandOnQuartersAndStayWithinWhatARideAllows() {
+        val odd = Environment("odd", "Odd", null, speedScale = 1.6f) { seed -> FakeScene("odd", seed, log) }
+        assertEquals(1.75f, EnvironmentSettings().withSpeedStepped(up = true, odd).speedScale, "from 1.6 the next quarter up")
+        assertEquals(1.25f, EnvironmentSettings().withSpeedStepped(up = false, odd).speedScale)
+        var s = EnvironmentSettings()
+        repeat(80) { s = s.withSpeedStepped(up = true, plain) }
+        assertEquals(RideState.MAX_WORLD_SCALE, s.speedScale)
+        repeat(80) { s = s.withSpeedStepped(up = false, plain) }
+        assertEquals(RideState.MIN_WORLD_SCALE, s.speedScale)
+
+        // A saved speed that makes no sense is ignored.
+        for (bad in listOf("fast", "0", "-2", "400", "NaN", "")) {
+            val backing = MemorySettingsStore()
+            backing.put("env.plain.speed", bad)
+            assertEquals(null, EnvironmentSettingsStore(backing).load(plain).speedScale, "saved speed '$bad'")
+        }
+        assertFailsWith<IllegalArgumentException> { Environment("still", "Still", null, speedScale = 0f) { seed -> FakeScene("still", seed, log) } }
+        assertFailsWith<IllegalArgumentException> { Environment("warp", "Warp", null, speedScale = 50f) { seed -> FakeScene("warp", seed, log) } }
+    }
+
+    @Test
+    fun theWorldGoesByAtTheBikesSpeedTimesTheScaleWhileTheBikesOwnNumbersStayTrue() {
+        val ride = RideState(3f)
+        assertEquals(1f, ride.worldScale)
+        repeat(600) { ride.step(1f / 60f, 3f) }
+        assertEquals(30.0, ride.distanceMeters, 0.01)
+        assertEquals(30.0, ride.worldDistanceMeters, 0.01)
+        assertEquals(3f, ride.worldSpeed)
+
+        ride.worldScale = 2.5f
+        assertEquals(7.5f, ride.worldSpeed, 1e-5f)
+        assertEquals(3f, ride.speed, "the bike's own speed is what the rider is doing")
+        repeat(600) { ride.step(1f / 60f, 3f) }
+        assertEquals(60.0, ride.distanceMeters, 0.01, "the bike's own distance: what the HUD shows and a goal counts")
+        assertEquals(30.0 + 75.0, ride.worldDistanceMeters, 0.05, "what was already covered stays; the rest goes by faster")
+        // The cranks follow the rider's legs, not the scenery.
+        val before = ride.crankAngle
+        val other = RideState(3f)
+        repeat(1200) { other.step(1f / 60f, 3f) }
+        assertEquals(other.crankAngle, before, 1e-3f)
+
+        for (bad in listOf(Float.NaN to 1f, 0f to RideState.MIN_WORLD_SCALE, -3f to RideState.MIN_WORLD_SCALE, 99f to RideState.MAX_WORLD_SCALE)) {
+            ride.worldScale = bad.first
+            assertEquals(bad.second, ride.worldScale, "scale ${bad.first}")
+        }
+    }
+
+    @Test
+    fun everyEnvironmentHasASpeedAndTheScaleIsShownToTwoDecimals() {
+        val defaults = Environments.all.associate { it.id to it.speedScale }
+        assertEquals(mapOf("riverfront" to 1.5f, "skylift-mesa" to 2.5f, "pedalcraft-island" to 1f, "night-streets" to 2f), defaults)
+        for (e in Environments.all) {
+            assertTrue(e.speedScale in RideState.MIN_WORLD_SCALE..RideState.MAX_WORLD_SCALE, e.id)
+            // A default the stepper can reach and come back to exactly.
+            assertEquals(0f, (e.speedScale / EnvironmentSettings.SPEED_STEP) % 1f, 1e-6f, "${e.id}'s speed ${e.speedScale} is not a whole number of steps")
+        }
+        assertEquals("x1.50", text { RideText.scale(it, 1.5f) })
+        assertEquals("x2.25", text { RideText.scale(it, 2.25f) })
+        assertEquals("x10.00", text { RideText.scale(it, 10f) })
+        assertEquals("x0.25", text { RideText.scale(it, 0.25f) })
+    }
+
+    @Test
+    fun aRideStartsAtItsEnvironmentsSpeedAndTakesTheNewOneWhenTheSceneryChanges() {
+        val slow = Environment("slow", "Slow", null) { seed -> FakeScene("slow", seed, log) }
+        val quick = Environment("quick", "Quick", null, speedScale = 2f) { seed -> FakeScene("quick", seed, log) }
+        val stage = object : AppFlow.Stage {
+            override fun pickerShown(highlight: Environment) {}
+            override fun pickerHidden() {}
+            override fun rideStarted(session: RideSession) {}
+            override fun rideEnded() {}
+        }
+        // Left alone, a ride moves at its environment's own speed.
+        val own = AppFlow(FakeMusic(log), { 3f }, 1L, quick, startOnPicker = false, stage = stage)
+        own.open()
+        assertEquals(2f, own.session!!.ride.worldScale)
+        assertTrue(own.switchEnvironment(slow))
+        assertEquals(1f, own.session!!.ride.worldScale)
+
+        // With settings behind it, at the rider's.
+        val chosen = HashMap<String, Float>()
+        val flow = AppFlow(FakeMusic(log), { 3f }, 1L, slow, startOnPicker = true, stage = stage, worldScale = { chosen[it.id] ?: it.speedScale })
+        flow.open()
+        chosen["quick"] = 3.25f
+        flow.ride(quick)
+        assertEquals(3.25f, flow.session!!.ride.worldScale)
+        assertTrue(flow.switchEnvironment(slow))
+        assertEquals(1f, flow.session!!.ride.worldScale)
+        assertFalse(flow.switchEnvironment(slow), "already there")
+        assertEquals(1f, flow.session!!.ride.worldScale)
+    }
+
     // ---- goals ----
 
     @Test
@@ -207,6 +335,11 @@ class RideSettingsTest {
                 assertTrue(l.musicSummary.width >= 400f, "$where: room for the music line: ${l.musicSummary.width}")
                 for (u in l.units) assertTrue(inside(l.rows[SettingsLayout.ROW_UNITS], u), where)
                 for (g in l.goals) assertTrue(inside(l.rows[SettingsLayout.ROW_GOAL], g), where)
+                for (r in listOf(l.speedLess, l.speedValue, l.speedMore)) assertTrue(inside(l.rows[SettingsLayout.ROW_SPEED], r), where)
+                assertFalse(overlap(l.speedValue, l.speedLess) || overlap(l.speedValue, l.speedMore), where)
+                assertTrue(l.speedLess.x < l.speedValue.x && l.speedValue.x < l.speedMore.x, "$where: slower, value, faster")
+                assertTrue(l.speedValue.width >= 600f, "$where: room for the speed and its default: ${l.speedValue.width}")
+                assertTrue(l.speedValue.height >= SettingsLayout.MIN_TOUCH, "$where: the speed box is tapped to reset it")
                 for (r in listOf(l.amountLess, l.amountValue, l.amountMore)) assertTrue(inside(l.rows[SettingsLayout.ROW_AMOUNT], r), where)
                 assertFalse(overlap(l.amountValue, l.amountLess) || overlap(l.amountValue, l.amountMore), where)
                 assertTrue(l.amountLess.x < l.amountValue.x && l.amountValue.x < l.amountMore.x, "$where: less, value, more")

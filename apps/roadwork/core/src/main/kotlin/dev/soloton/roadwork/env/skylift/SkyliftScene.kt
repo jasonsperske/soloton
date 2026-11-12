@@ -103,11 +103,11 @@ class SkyliftScene(private val seed: Long) : EnvironmentScene {
     }
 
     override fun step(dt: Float, ride: RideState) {
-        motion.step(dt, ride.speed, ride.resistance)
+        motion.step(dt, ride.worldSpeed, ride.resistance)
     }
 
     override fun draw(ride: RideState) {
-        val distance = ride.distanceMeters
+        val distance = ride.worldDistanceMeters
         track.update(distance) { slot, index -> buildChunk(slot, index) }
         placeCameras()
 

@@ -130,7 +130,7 @@ class PedalcraftScene(private val seed: Long) : EnvironmentScene {
     }
 
     override fun step(dt: Float, ride: RideState) {
-        motion.step(dt, ride.speed, ride.resistance)
+        motion.step(dt, ride.worldSpeed, ride.resistance)
     }
 
     override fun setInspectionView(name: String?): Boolean {

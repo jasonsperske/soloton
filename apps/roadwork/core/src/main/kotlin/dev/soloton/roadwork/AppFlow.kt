@@ -12,9 +12,10 @@ class RideSession(
     initialSpeed: Float,
     seed: Long,
     options: (Environment) -> Map<String, String> = { emptyMap() },
+    worldScale: (Environment) -> Float = { it.speedScale },
 ) {
     val timestep = FixedTimestep(stepSeconds = 1f / 60f)
-    val ride = RideState(initialSpeed)
+    val ride = RideState(initialSpeed).also { it.worldScale = worldScale(environment) }
     val host = EnvironmentHost(environment, music, ride, seed, options)
 }
 
@@ -41,6 +42,7 @@ class AppFlow(
     private val stage: Stage,
     private val onRideStarted: (Environment) -> Unit = {},
     private val options: (Environment) -> Map<String, String> = { emptyMap() },
+    private val worldScale: (Environment) -> Float = { it.speedScale },
 ) {
     enum class Screen { PICKER, RIDE }
 
@@ -122,7 +124,13 @@ class AppFlow(
             environment = next
             return true
         }
-        if (!s.host.switchTo(next)) return false
+        // The new scene is built from the ride as it stands, so it must already move at its own speed.
+        val before = s.ride.worldScale
+        s.ride.worldScale = worldScale(next)
+        if (!s.host.switchTo(next)) {
+            s.ride.worldScale = before
+            return false
+        }
         environment = next
         onRideStarted(next)
         return true
@@ -163,7 +171,7 @@ class AppFlow(
         val previous = environment
         environment = next
         screen = Screen.RIDE
-        val s = RideSession(next, music, initialSpeed(), seed, options)
+        val s = RideSession(next, music, initialSpeed(), seed, options, worldScale)
         s.host.setInspectionView(inspectionView)
         if (width > 0 && height > 0) s.host.resize(width, height)
         try {

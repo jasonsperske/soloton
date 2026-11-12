@@ -17,6 +17,9 @@ object Pedalcraft {
         id = "pedalcraft-island",
         title = "Pedalcraft Island",
         musicFolder = "Pilotwings",
+        // Each craft already has its own gearing (5, 3 or 7 metres flown per metre ridden), sized so a
+        // leg takes 20 to 24 minutes. Scaling the world on top would shorten the legs by the same factor.
+        speedScale = 1f,
         options = listOf(
             EnvironmentOption(
                 key = CRAFT,

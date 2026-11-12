@@ -12,5 +12,7 @@ object Skylift {
         id = "skylift-mesa",
         title = "Skylift Mesa",
         musicFolder = "Space Harrier II",
+        // Open desert, seen from behind the runner and often from the air: little nearby to judge speed by.
+        speedScale = 2.5f,
     ) { seed -> SkyliftScene(seed) }
 }

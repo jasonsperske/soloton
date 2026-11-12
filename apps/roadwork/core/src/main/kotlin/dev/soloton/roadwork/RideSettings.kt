@@ -52,6 +52,8 @@ class EnvironmentOption(val key: String, val title: String, val choices: List<Ch
  * @param goalDistance the distance goal in whole [units] (10 means 10 km, or 10 miles)
  * @param goalMinutes the time goal
  * @param options the chosen [EnvironmentOption.Choice] id for each option key
+ * @param speedScale how many metres of world go by for each metre the bike covers, or null to use
+ *   the environment's own ([Environment.speedScale])
  */
 class EnvironmentSettings(
     val units: Units = Units.KILOMETRES,
@@ -59,19 +61,36 @@ class EnvironmentSettings(
     val goalDistance: Int = DEFAULT_DISTANCE,
     val goalMinutes: Int = DEFAULT_MINUTES,
     val options: Map<String, String> = emptyMap(),
+    val speedScale: Float? = null,
 ) {
-    fun withUnits(value: Units) = EnvironmentSettings(value, goalKind, goalDistance, goalMinutes, options)
+    fun withUnits(value: Units) = EnvironmentSettings(value, goalKind, goalDistance, goalMinutes, options, speedScale)
 
-    fun withGoalKind(value: GoalKind) = EnvironmentSettings(units, value, goalDistance, goalMinutes, options)
+    fun withGoalKind(value: GoalKind) = EnvironmentSettings(units, value, goalDistance, goalMinutes, options, speedScale)
 
     /** One step up or down the list of distances or times, whichever the goal is; unchanged for a free ride. */
     fun withGoalStepped(up: Boolean): EnvironmentSettings = when (goalKind) {
-        GoalKind.DISTANCE -> EnvironmentSettings(units, goalKind, step(DISTANCES, goalDistance, up), goalMinutes, options)
-        GoalKind.TIME -> EnvironmentSettings(units, goalKind, goalDistance, step(MINUTES, goalMinutes, up), options)
+        GoalKind.DISTANCE -> EnvironmentSettings(units, goalKind, step(DISTANCES, goalDistance, up), goalMinutes, options, speedScale)
+        GoalKind.TIME -> EnvironmentSettings(units, goalKind, goalDistance, step(MINUTES, goalMinutes, up), options, speedScale)
         GoalKind.FREE -> this
     }
 
-    fun withOption(key: String, choiceId: String) = EnvironmentSettings(units, goalKind, goalDistance, goalMinutes, options + (key to choiceId))
+    fun withOption(key: String, choiceId: String) =
+        EnvironmentSettings(units, goalKind, goalDistance, goalMinutes, options + (key to choiceId), speedScale)
+
+    /** [value] as this environment's speed, or null to go back to the environment's own. */
+    fun withSpeedScale(value: Float?) = EnvironmentSettings(units, goalKind, goalDistance, goalMinutes, options, value)
+
+    /** The speed in force in [environment]: the rider's if they have set one, otherwise the environment's own. */
+    fun speedScaleFor(environment: Environment): Float = speedScale ?: environment.speedScale
+
+    /**
+     * One step of [SPEED_STEP] up or down from the speed in force in [environment], landing on a
+     * multiple of the step and staying within what a ride allows.
+     */
+    fun withSpeedStepped(up: Boolean, environment: Environment): EnvironmentSettings {
+        val steps = Math.round(speedScaleFor(environment) / SPEED_STEP) + if (up) 1 else -1
+        return withSpeedScale((steps * SPEED_STEP).coerceIn(RideState.MIN_WORLD_SCALE, RideState.MAX_WORLD_SCALE))
+    }
 
     /** The goal's distance in metres, or 0 if the goal is not a distance. */
     val goalMeters: Double get() = if (goalKind == GoalKind.DISTANCE) goalDistance * units.meters else 0.0
@@ -94,9 +113,9 @@ class EnvironmentSettings(
     }
 
     override fun equals(other: Any?): Boolean = other is EnvironmentSettings && units == other.units && goalKind == other.goalKind &&
-        goalDistance == other.goalDistance && goalMinutes == other.goalMinutes && options == other.options
+        goalDistance == other.goalDistance && goalMinutes == other.goalMinutes && options == other.options && speedScale == other.speedScale
 
-    override fun hashCode(): Int = arrayOf(units, goalKind, goalDistance, goalMinutes, options).contentHashCode()
+    override fun hashCode(): Int = arrayOf(units, goalKind, goalDistance, goalMinutes, options, speedScale).contentHashCode()
 
     companion object {
         /** The distances a goal can be set to, in whole kilometres or miles, and the times, in minutes. */
@@ -104,6 +123,9 @@ class EnvironmentSettings(
         val MINUTES = intArrayOf(5, 10, 15, 20, 30, 45, 60, 90, 120)
         const val DEFAULT_DISTANCE = 10
         const val DEFAULT_MINUTES = 30
+
+        /** How much one press of the speed's minus or plus changes it. */
+        const val SPEED_STEP = 0.25f
 
         /** The next value up or down [values] from [current] (which need not be in it), stopping at the ends. */
         internal fun step(values: IntArray, current: Int, up: Boolean): Int =
@@ -127,6 +149,8 @@ class EnvironmentSettingsStore(private val store: SettingsStore) {
             goalDistance = store.get(prefix + "goalDistance")?.toIntOrNull()?.takeIf { it in 1..1000 } ?: EnvironmentSettings.DEFAULT_DISTANCE,
             goalMinutes = store.get(prefix + "goalMinutes")?.toIntOrNull()?.takeIf { it in 1..1440 } ?: EnvironmentSettings.DEFAULT_MINUTES,
             options = options,
+            speedScale = store.get(prefix + "speed")?.toFloatOrNull()
+                ?.takeIf { it in RideState.MIN_WORLD_SCALE..RideState.MAX_WORLD_SCALE },
         )
     }
 
@@ -137,6 +161,8 @@ class EnvironmentSettingsStore(private val store: SettingsStore) {
         store.put(prefix + "goalDistance", settings.goalDistance.toString())
         store.put(prefix + "goalMinutes", settings.goalMinutes.toString())
         for (option in environment.options) store.put(prefix + "option." + option.key, option.choice(settings.options[option.key]).id)
+        // An empty value means "the environment's own": it does not parse as a number, so load() gives null.
+        store.put(prefix + "speed", settings.speedScale?.toString() ?: "")
     }
 }
 
@@ -190,6 +216,14 @@ object RideText {
         }
         sb.append(':')
         pad2(sb, seconds % 60)
+    }
+
+    /** A speed scale to two decimals: "x1.50", "x2.25". */
+    fun scale(sb: StringBuilder, value: Float) {
+        sb.setLength(0)
+        val hundredths = Math.round(value * 100f).toLong()
+        sb.append('x').append(hundredths / 100).append('.')
+        pad2(sb, hundredths % 100)
     }
 
     private fun pad2(sb: StringBuilder, v: Long) {
